@@ -21,6 +21,7 @@
 
 #include "TestClearColor.h"
 #include "TestTexture2D.h"
+#include "TestServer2D.h"
 
 
 int main(void)
@@ -70,6 +71,7 @@ int main(void)
 
     testMenu->RegisterTest<test::TestClearColor>("Clear Color");
     testMenu->RegisterTest<test::TestTexture2D>("2D Texture");
+    testMenu->RegisterTest<test::TestServer2D>("Basic 2D Server");
 
     while (!glfwWindowShouldClose(window))
     {
