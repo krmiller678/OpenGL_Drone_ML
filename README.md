@@ -42,7 +42,7 @@ Requirements:
 
 Clone from GitHub:
 ```
-git clone https://github.com/krmiller678/Drone_GL-ML <my-directory>
+git clone https://github.com/krmiller678/OpenGL_Drone_ML <my-directory>
 ```
 
 Install Dependencies:  
