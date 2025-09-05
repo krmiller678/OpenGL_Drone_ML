@@ -18,8 +18,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 
 # Set up glew library for access to gpu driver functions
-set(GLEW_LIB_DIR "${CMAKE_SOURCE_DIR}/vendor/glew/bin/Release/x64")
-file(COPY "${GLEW_LIB_DIR}/glew32.dll" DESTINATION ${CMAKE_BINARY_DIR})
+set(GLEW_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/glew/bin/Release/x64")
+file(COPY "${GLEW_LIB_DIR}/glew32.dll" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # ImGui FetchContent
 FetchContent_Declare(
@@ -95,13 +95,13 @@ add_executable(drone_sim
     )
 
 # Ensure that resources are copied over
-file(COPY "./res" DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY "./res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/tests
-    ${CMAKE_SOURCE_DIR}/vendor
-    ${CMAKE_SOURCE_DIR}/vendor/glew/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glew/include
     )
 
 link_directories(
@@ -118,9 +118,9 @@ target_link_libraries(drone_sim PRIVATE ImGuiLib "${GLEW_LIB_DIR}/glew32.lib" gl
 add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/ml_image_built.stamp
     COMMAND docker image inspect drone_ml:latest > /dev/null 2>&1
-        || docker build -t drone_ml ${CMAKE_SOURCE_DIR}/ml_service
+        || docker build -t drone_ml ${CMAKE_CURRENT_SOURCE_DIR}/ml_service
     COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/ml_image_built.stamp
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/ml_service
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ml_service
     COMMENT "Checking/Building ML Docker image"
 )
 
@@ -130,7 +130,7 @@ add_custom_target(ml-build
 
 # Run ML container (detached so sim can run at same time)
 add_custom_target(ml-run
-    COMMAND docker run -d --rm -p 5000:5000 --name drone_ml_container -v ${CMAKE_SOURCE_DIR}/ml_service/ml_server:/app drone_ml
+    COMMAND docker run -d --rm -p 5000:5000 --name drone_ml_container -v ${CMAKE_CURRENT_SOURCE_DIR}/ml_service/ml_server:/app drone_ml
     # COMMAND docker logs -f drone_ml_container - this blocks! run in separate terminal
     DEPENDS ml-build
     COMMENT "Running ML Docker container in detached mode"
