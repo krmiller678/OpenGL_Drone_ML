@@ -7,14 +7,13 @@ delta = 1
 # Dummy ML model
 def compute_next_action(state):
     global delta
-    if state["y"] == 540 or state["y"] == 0:
+    if state["x"] == 960 or state["x"] == 0:
         delta = -delta
-    return {"x": state["x"], "y": state["y"] + delta}
+    return {"x": state["x"] + delta, "y": state["y"] , "z": state["z"]}
 
 @app.route("/compute", methods=["POST"])
 def compute():
     state = request.json
-    delta = 1
     result = compute_next_action(state)
     return jsonify(result)
 
