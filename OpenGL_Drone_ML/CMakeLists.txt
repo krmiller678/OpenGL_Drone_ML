@@ -92,6 +92,7 @@ add_executable(drone_sim
                 tests/TestClearColor.cpp
                 tests/TestTexture2D.cpp
                 tests/TestServer2D.cpp
+                tests/CooperTest.cpp
     )
 
 # Ensure that resources are copied over
