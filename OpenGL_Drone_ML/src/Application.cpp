@@ -75,7 +75,7 @@ int main(void)
         testMenu->RegisterTest<test::TestTexture2D>("2D Texture");
         testMenu->RegisterTest<test::TestServer2D>("Basic 2D Server");
         testMenu->RegisterTest<test::CooperTest>("Cooper Test");
-        testMenu->RegisterTest<test::Test2DMultiTexture>("2D Multi-Texture");
+        //testMenu->RegisterTest<test::Test2DMultiTexture>("2D Multi-Texture");
 
         while (!glfwWindowShouldClose(window))
         {
