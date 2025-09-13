@@ -23,6 +23,7 @@
 #include "TestTexture2D.h"
 #include "TestServer2D.h"
 #include "CooperTest.h"
+#include "Test2DMultiTexture.h"
 
 int main(void)
 {
@@ -74,6 +75,7 @@ int main(void)
         testMenu->RegisterTest<test::TestTexture2D>("2D Texture");
         testMenu->RegisterTest<test::TestServer2D>("Basic 2D Server");
         testMenu->RegisterTest<test::CooperTest>("Cooper Test");
+        testMenu->RegisterTest<test::Test2DMultiTexture>("2D Multi-Texture");
 
         while (!glfwWindowShouldClose(window))
         {
