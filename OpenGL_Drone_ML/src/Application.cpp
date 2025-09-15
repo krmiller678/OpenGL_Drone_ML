@@ -27,7 +27,7 @@
 
 int main(void)
 {
-    GLFWwindow *window;
+    GLFWwindow* window;
 
     if (!glfwInit())
         return -1;
@@ -59,7 +59,7 @@ int main(void)
         Renderer renderer;
 
         ImGui::CreateContext();
-        ImGuiIO &io = ImGui::GetIO();
+        ImGuiIO& io = ImGui::GetIO();
         (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
@@ -67,15 +67,15 @@ int main(void)
         ImGui_ImplOpenGL3_Init();
         ImGui::StyleColorsDark();
 
-        test::Test *currentTest = nullptr; // TestMenu will change this for us
-        test::TestMenu *testMenu = new test::TestMenu(currentTest);
+        test::Test* currentTest = nullptr; // TestMenu will change this for us
+        test::TestMenu* testMenu = new test::TestMenu(currentTest);
         currentTest = testMenu;
 
         testMenu->RegisterTest<test::TestClearColor>("Clear Color");
         testMenu->RegisterTest<test::TestTexture2D>("2D Texture");
         testMenu->RegisterTest<test::TestServer2D>("Basic 2D Server");
         testMenu->RegisterTest<test::CooperTest>("Cooper Test");
-        //testMenu->RegisterTest<test::Test2DMultiTexture>("2D Multi-Texture");
+        testMenu->RegisterTest<test::Test2DMultiTexture>("2D Multi-Texture");
 
         while (!glfwWindowShouldClose(window))
         {

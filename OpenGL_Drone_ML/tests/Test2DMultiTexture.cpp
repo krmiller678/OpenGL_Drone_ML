@@ -51,7 +51,8 @@ namespace test
         m_Shader->Bind();
         m_Shader->SetUniform4f("u_Color", 0.8f, 0.3f, 0.8f, 1.0f);
 
-        m_Texture = std::make_unique<Texture>("res/textures/cherno.png");
+        m_Texture = std::make_unique<Texture>("res/textures/alien.png");
+        m_Texture2 = std::make_unique<Texture>("res/textures/casa.png");
         m_Shader->SetUniform1i("u_Texture", 0); // Texture is bound to slot 0
     }
 
@@ -71,24 +72,28 @@ namespace test
         Renderer renderer;
 
         m_Texture->Bind();
+        m_Texture2->Bind(1);
 
         CommunicateWithServer();
 
-        {
-            glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationA);
-            glm::mat4 mvp = m_Proj * m_View * model; // OpenGL col major leads to this order**
-            m_Shader->Bind();
-            m_Shader->SetUniformMat4f("u_MVP", mvp);
-
-            renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
-        }
+        
         // draw targets
         for (auto &pos : m_Targets)
         {
             glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
             glm::mat4 mvp = m_Proj * m_View * model;
             m_Shader->Bind();
+            m_Shader->SetUniform1i("u_Texture", 1);
             m_Shader->SetUniformMat4f("u_MVP", mvp);
+            renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
+        }
+        {
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationA);
+            glm::mat4 mvp = m_Proj * m_View * model; // OpenGL col major leads to this order**
+            m_Shader->Bind();
+            m_Shader->SetUniform1i("u_Texture", 0);
+            m_Shader->SetUniformMat4f("u_MVP", mvp);
+
             renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
         }
         /*
@@ -113,7 +118,7 @@ namespace test
     void Test2DMultiTexture::CommunicateWithServer()
     {
         nlohmann::json payload;
-        payload["test"] = "Test2DMultiTexture"; // <-- identifier
+        payload["test"] = "Test2DMultiTexture"; // <-- identifier, tells server what to do!
         payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
         payload["targets"] = nlohmann::json::array();
         for (auto &t : m_Targets)

@@ -22,7 +22,7 @@ def compute():
     test_name = state.get("test", "")
 
     # ---------- LEFT-RIGHT LOGIC FOR OTHER TESTS ----------
-    if test_name != "CooperTest":
+    if test_name != "CooperTest" and test_name != "Test2DMultiTexture":
         current = state["current"]
         if current["x"] >= 960 or current["x"] <= 0:
             delta = -delta
