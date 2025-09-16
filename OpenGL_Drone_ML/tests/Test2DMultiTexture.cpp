@@ -13,11 +13,17 @@
 namespace test
 {
 
-    Test2DMultiTexture::Test2DMultiTexture()
+    Test2DMultiTexture::Test2DMultiTexture(GLFWwindow *window)
         : m_Proj(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
           m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
-          m_TranslationA(200, 200, 0)
+          m_FreeLook(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
+          m_TranslationA(200, 200, 0),
+          m_Window(window), m_FreeLookEnabled(false)
     {
+        // attaches class instance to the window -> must be used for key callbacks to work!
+        glfwSetWindowUserPointer(window, this);
+        glfwSetKeyCallback(window, KeyCallback);
+
         // target positions
         m_Targets.push_back({480, 135, 0});
         m_Targets.push_back({960, 135, 0});
@@ -55,7 +61,11 @@ namespace test
 
         m_Texture = std::make_unique<Texture>("res/textures/alien.png");
         m_Texture2 = std::make_unique<Texture>("res/textures/casa.png");
-        m_Shader->SetUniform1i("u_Texture", 0); // Texture is bound to slot 0
+        //m_Shader->SetUniform1i("u_Texture", 0); // Texture is bound to slot 0
+        m_Texture->Bind();
+        m_Texture2->Bind(1);
+
+        m_ViewToUse = &m_View;
     }
 
     Test2DMultiTexture::~Test2DMultiTexture()
@@ -73,17 +83,14 @@ namespace test
 
         Renderer renderer;
 
-        m_Texture->Bind();
-        m_Texture2->Bind(1);
-
         CommunicateWithServer();
-
+        ProcessInput();
         
         // draw targets
         for (auto &pos : m_Targets)
         {
             glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
-            glm::mat4 mvp = m_Proj * m_View * model;
+            glm::mat4 mvp = m_Proj * *m_ViewToUse * model;
             m_Shader->Bind();
             m_Shader->SetUniform1i("u_Texture", 1);
             m_Shader->SetUniformMat4f("u_MVP", mvp);
@@ -91,11 +98,11 @@ namespace test
         }
         {
             glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationA);
-            glm::mat4 mvp = m_Proj * m_View * model; // OpenGL col major leads to this order**
+            glm::mat4 mvp = m_Proj * *m_ViewToUse * model; // OpenGL col major leads to this order**
             m_Shader->Bind();
             m_Shader->SetUniform1i("u_Texture", 0);
             m_Shader->SetUniformMat4f("u_MVP", mvp);
-
+            
             renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
         }
         /*
@@ -159,4 +166,23 @@ namespace test
         }
     }
 
+    void Test2DMultiTexture::ProcessInput()
+    {  
+    }
+    
+    void Test2DMultiTexture::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+    {
+        // Grab the instance pointer back out
+        auto* self = static_cast<Test2DMultiTexture*>(glfwGetWindowUserPointer(window));
+        if (!self) return;
+
+        if (key == GLFW_KEY_F && action == GLFW_RELEASE)
+        {
+            if (!self->m_FreeLookEnabled)
+                self->m_ViewToUse = &self->m_FreeLook;
+            else
+                self->m_ViewToUse = &self->m_View;
+            self->m_FreeLookEnabled = !self->m_FreeLookEnabled;
+        }
+    }
 }
