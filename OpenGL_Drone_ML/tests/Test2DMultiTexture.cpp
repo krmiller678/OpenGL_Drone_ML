@@ -148,13 +148,9 @@ namespace test
             if (action["x"] > 910)
             {
                 m_View = glm::translate(m_View, glm::vec3(m_TranslationA.x - float(action["x"]), 0, 0));
-                m_TranslationA.y = action["y"];
             }
-            else
-            {
-                m_TranslationA.x = action["x"];
-                m_TranslationA.y = action["y"];
-            }
+            m_TranslationA.x = action["x"];
+            m_TranslationA.y = action["y"];
             
         }
         catch (const std::exception &e)
