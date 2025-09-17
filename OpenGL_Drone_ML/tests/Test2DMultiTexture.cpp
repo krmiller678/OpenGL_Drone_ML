@@ -17,12 +17,13 @@ namespace test
           m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
           m_FreeLook(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
           m_TranslationA(200, 200, 0), m_LastX(960/2), m_LastY(540/2),
-          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false)
+          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_CommsOn(false)
     {
         // attaches class instance to the window -> must be used for key callbacks to work!
         glfwSetWindowUserPointer(window, this);
         glfwSetKeyCallback(window, KeyCallback);
         glfwSetCursorPosCallback(window, MouseCallback);
+        glfwSetMouseButtonCallback(window, MouseButtonCallback);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
@@ -86,7 +87,8 @@ namespace test
         Renderer renderer;
 
         ProcessInput();
-        CommunicateWithServer();
+        if (m_CommsOn)
+            CommunicateWithServer();
         
         // draw targets
         for (auto &pos : m_Targets)
@@ -180,6 +182,9 @@ namespace test
                 self->m_ViewToUse = &self->m_View;
             self->m_FreeLookEnabled = !self->m_FreeLookEnabled;
         }
+
+        if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+            self->m_CommsOn = true;
     }
 
     void Test2DMultiTexture::MouseCallback(GLFWwindow *window, double xposIn, double yposIn)
@@ -209,4 +214,37 @@ namespace test
             self->m_LastY = ypos;
         }
     }
+
+    void Test2DMultiTexture::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+
+    auto* self = static_cast<Test2DMultiTexture*>(glfwGetWindowUserPointer(window));
+    if (!self) return;
+
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+
+        // Step 1: window → NDC
+        float ndcX = (2.0f * xpos) / width - 1.0f;
+        float ndcY = 1.0f - (2.0f * ypos) / height;
+
+        glm::vec4 clipCoords(ndcX, ndcY, 0.0f, 1.0f);
+
+        // Step 2: clip → world
+        glm::mat4 viewProj = self->m_Proj * self->m_FreeLook;
+        glm::mat4 invVP = glm::inverse(viewProj);
+        glm::vec4 worldPos = invVP * clipCoords;
+        worldPos /= worldPos.w;
+
+        // Step 3: store
+        self->m_Targets.push_back(glm::vec3(worldPos));
+    }
+}
+
 }

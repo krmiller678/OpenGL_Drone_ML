@@ -46,6 +46,7 @@ namespace test
         GLFWwindow* m_Window;
         bool m_FreeLookEnabled;
         bool m_LeftClick;
+        bool m_CommsOn;
         float m_LastX, m_LastY;
 
         // positions to display as icons
@@ -56,6 +57,7 @@ namespace test
         // KeyCallback does not need to be polled it is handled by GLFW directly
         static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
         static void MouseCallback(GLFWwindow *window, double xposIn, double yposIn);
+        static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
     };
 
 }

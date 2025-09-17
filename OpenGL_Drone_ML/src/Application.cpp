@@ -96,6 +96,7 @@ int main(void)
                     glfwSetWindowUserPointer(window, testMenu);
                     glfwSetKeyCallback(window, testMenu->KeyCallback);
                     glfwSetCursorPosCallback(window, testMenu->MouseCallback);
+                    glfwSetMouseButtonCallback(window, testMenu->MouseButtonCallback);
                     delete currentTest;
                     currentTest = testMenu;
                 }

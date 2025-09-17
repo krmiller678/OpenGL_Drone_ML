@@ -39,7 +39,7 @@ namespace test {
             template<typename T>
             void RegisterTest(const std::string& name, GLFWwindow *window)
             {
-                std::cout << "Registering test with input" << name << std::endl;
+                std::cout << "Registering test with input enabled: " << name << std::endl;
 
                 m_Tests.push_back(std::make_pair(name, [window]() { return new T(window); }));
             }
@@ -53,6 +53,11 @@ namespace test {
             {
                 ImGui_ImplGlfw_CursorPosCallback(window, xpos, ypos);
             }
+            static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+            {
+                ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+            }
+            
         private:
             Test*& m_CurrentTest;
             std::vector<std::pair<std::string, std::function<Test*()>>> m_Tests;
