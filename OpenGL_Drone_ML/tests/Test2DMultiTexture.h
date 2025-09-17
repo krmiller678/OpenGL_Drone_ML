@@ -7,6 +7,13 @@
 #include "Texture.h"
 
 #include <memory>
+/*
+| Method       | Think of it as…                        | Accuracy                                     |
+| ------------ | -------------------------------------- | -------------------------------------------- |
+| **Callback** | OS interrupts you with an “event”      | Exact timing; can catch short presses        |
+| **Polling**  | Asking “is this key down?” every frame | Continuous state; can miss very fast presses |
+*/
+
 
 namespace test
 {
