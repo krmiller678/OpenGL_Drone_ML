@@ -38,6 +38,8 @@ namespace test
         // user input data
         GLFWwindow* m_Window;
         bool m_FreeLookEnabled;
+        bool m_LeftClick;
+        float m_LastX, m_LastY;
 
         // positions to display as icons
         std::vector<glm::vec3> m_Targets;
@@ -46,6 +48,7 @@ namespace test
         void ProcessInput(); // handles per frame polling
         // KeyCallback does not need to be polled it is handled by GLFW directly
         static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+        static void MouseCallback(GLFWwindow *window, double xposIn, double yposIn);
     };
 
 }

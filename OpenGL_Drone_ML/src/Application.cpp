@@ -57,16 +57,7 @@ int main(void)
         GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
         Renderer renderer;
-
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        (void)io;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
-        ImGui_ImplGlfw_InitForOpenGL(window, true);
-        ImGui_ImplOpenGL3_Init();
-        ImGui::StyleColorsDark();
-
+        
         test::Test* currentTest = nullptr; // TestMenu will change this for us
         test::TestMenu* testMenu = new test::TestMenu(currentTest);
         currentTest = testMenu;
@@ -76,6 +67,15 @@ int main(void)
         testMenu->RegisterTest<test::TestServer2D>("Basic 2D Server");
         testMenu->RegisterTest<test::CooperTest>("Cooper Test");
         testMenu->RegisterTest<test::Test2DMultiTexture>("2D Multi-Texture", window);
+
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        (void)io;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+        ImGui_ImplGlfw_InitForOpenGL(window, true);
+        ImGui_ImplOpenGL3_Init();
+        ImGui::StyleColorsDark();
 
         while (!glfwWindowShouldClose(window))
         {
@@ -93,6 +93,9 @@ int main(void)
                 ImGui::Begin("Test");
                 if (currentTest != testMenu && ImGui::Button("<-"))
                 {
+                    glfwSetWindowUserPointer(window, testMenu);
+                    glfwSetKeyCallback(window, testMenu->KeyCallback);
+                    glfwSetCursorPosCallback(window, testMenu->MouseCallback);
                     delete currentTest;
                     currentTest = testMenu;
                 }

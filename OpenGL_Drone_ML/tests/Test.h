@@ -6,6 +6,8 @@
 #include <string>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
 
 namespace test {
 
@@ -40,6 +42,16 @@ namespace test {
                 std::cout << "Registering test with input" << name << std::endl;
 
                 m_Tests.push_back(std::make_pair(name, [window]() { return new T(window); }));
+            }
+
+            // Callback defaults to pass to ImGui
+            static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+            {
+                ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
+            }
+            static void MouseCallback(GLFWwindow* window, double xpos, double ypos)
+            {
+                ImGui_ImplGlfw_CursorPosCallback(window, xpos, ypos);
             }
         private:
             Test*& m_CurrentTest;

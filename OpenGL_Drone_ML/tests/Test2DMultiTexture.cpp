@@ -1,7 +1,6 @@
 #include "Test2DMultiTexture.h"
 
 #include "Renderer.h"
-#include "imgui.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -17,12 +16,15 @@ namespace test
         : m_Proj(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
           m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
           m_FreeLook(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
-          m_TranslationA(200, 200, 0),
-          m_Window(window), m_FreeLookEnabled(false)
+          m_TranslationA(200, 200, 0), m_LastX(960/2), m_LastY(540/2),
+          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false)
     {
         // attaches class instance to the window -> must be used for key callbacks to work!
         glfwSetWindowUserPointer(window, this);
         glfwSetKeyCallback(window, KeyCallback);
+        glfwSetCursorPosCallback(window, MouseCallback);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
 
         // target positions
         m_Targets.push_back({480, 135, 0});
@@ -83,8 +85,8 @@ namespace test
 
         Renderer renderer;
 
-        CommunicateWithServer();
         ProcessInput();
+        CommunicateWithServer();
         
         // draw targets
         for (auto &pos : m_Targets)
@@ -105,22 +107,12 @@ namespace test
             
             renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
         }
-        /*
-                {
-                    glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationB);
-                    glm::mat4 mvp = m_Proj * m_View * model; // OpenGL col major leads to this order**
-                    m_Shader->Bind();
-                    m_Shader->SetUniformMat4f("u_MVP", mvp);
-
-                    renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
-                }*/
     }
 
     void Test2DMultiTexture::OnImGuiRender()
     {
         ImGuiIO &io = ImGui::GetIO();
         (void)io;
-        ImGui::SliderFloat3("Translation B", &m_TranslationB.x, 0.0f, 960.0f);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     }
 
@@ -167,7 +159,11 @@ namespace test
     }
 
     void Test2DMultiTexture::ProcessInput()
-    {  
+    {
+        if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+            m_LeftClick = true;
+        else
+            m_LeftClick = false;
     }
     
     void Test2DMultiTexture::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -183,6 +179,34 @@ namespace test
             else
                 self->m_ViewToUse = &self->m_View;
             self->m_FreeLookEnabled = !self->m_FreeLookEnabled;
+        }
+    }
+
+    void Test2DMultiTexture::MouseCallback(GLFWwindow *window, double xposIn, double yposIn)
+    {
+        ImGui_ImplGlfw_CursorPosCallback(window, xposIn, yposIn);
+
+        auto* self = static_cast<Test2DMultiTexture*>(glfwGetWindowUserPointer(window));
+        if (!self) return;
+        
+        float xpos = static_cast<float>(xposIn);
+        float ypos = static_cast<float>(yposIn);
+        
+        if (self->m_LeftClick)
+        {
+            float xoffset = xpos - self->m_LastX;
+            float yoffset = self->m_LastY - ypos; // inverted Y
+        
+            self->m_LastX = xpos;
+            self->m_LastY = ypos;
+        
+            self->m_FreeLook = glm::translate(self->m_FreeLook, glm::vec3(xoffset, yoffset, 0));
+        }
+        else
+        {
+            // update last position so next drag doesn't jump
+            self->m_LastX = xpos;
+            self->m_LastY = ypos;
         }
     }
 }
