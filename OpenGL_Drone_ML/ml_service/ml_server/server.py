@@ -13,7 +13,7 @@ wait_duration = 3  # seconds to wait at each target
 def distance(p1, p2):
     """Euclidean distance in 2D."""
     return math.sqrt((p1["x"] - p2["x"])**2 + (p1["y"] - p2["y"])**2)
-
+#server refactor time
 @app.route("/compute", methods=["POST"])
 def compute():
     global visited_targets, waiting, wait_start_time, delta
