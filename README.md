@@ -9,7 +9,7 @@
   <br>
 </h1>
   <p align="center">
-    Real-time drone landing simulation with OpenGL + ML-based safe-zone detection
+    Real-time drone guidance simulation with OpenGL + ML-based safe-zone detection
     <br />
     </p>
 </p>
@@ -28,7 +28,7 @@
 </p>                                                                                                                             
                                                                                                                                                       
 ## About The Project 
-Our idea currently is to construct a drone simulation (probably in C++) that will simulate LiDAR scanning of a generated topography. From this, we hope to export a point cloud to an ML model that would advise the drone system on where best to land in the event of an emergency.
+This project is a drone flight simulator built with an OpenGL framework and a Docker-powered ML guidance server. It simulates LiDAR scanning of generated topographies and autonomous navigation, allowing testing of guidance systems before real-world deployment (e.g. last-mile delivery). The simulation includes an emergency landing protocol, with in-flight collision detection currently under development.
 
 <a id="quick-start"></a>
 ## Quick Start 🚀
@@ -36,27 +36,54 @@ Our idea currently is to construct a drone simulation (probably in C++) that wil
 <a id="manually-build"></a>
 ## Manually Build 🛠️
 
-Requirements:
-- Cmake 3.16 or later
+Requirements (must be on PATH):
+- CMake 3.16 - 3.31
 - C++17 or later
+- Git
+- Python 3
+- pip
+- meson (installed via pip)
+- ninja (installed via pip)
+
+Additional tools/runtime (PATH not required):
+- Docker
+- OpenGL runtime (provided by GPU manufacturer)
 
 Clone from GitHub:
 ```
 git clone https://github.com/krmiller678/OpenGL_Drone_ML <my-directory>
+cd <my-directory>
 ```
 
 Install Dependencies:  
+```bash
+pip install meson ninja
+```
 
 Run CMake from cloned directory:  
 ```bash
 mkdir build && cd build
 cmake ..
-make
+cmake --build .
 ```
 
-A note on deploying your own build:
+A few notes on deploying your own build:
+- Docker engine must be running prior to launching the application.
+- After the Docker image is built, ml_image_built.stamp will be added to build directory. To modify the Docker image and have it rebuild, delete the stamp.
+- The Docker container will automatically be deleted after being stopped.
 
 ## Usage
+### CMake Commands
+*Run from build directory*
+```bash
+cmake --build . --target drone_sim      # build simulation only
+cmake --build . --target ml-build       # build ML Docker image only
+cmake --build . --target ml-run         # run ML Docker container
+cmake --build . --target ml-stop        # stop ML Docker container
+cmake --build . --target run-all        # build and run both simulation + ML container
+cmake --build . --target clean-all      # cleanup everything
+```
+
 ### Input/Output
 - **Single-Click** 
 - **Double-Click**
@@ -73,6 +100,22 @@ A note on deploying your own build:
 - [ ] Manually engage emergency landing protocol 
 - [ ] Select your Machine Learning Landing Algorithm
 - [ ] Fuel level with automatic emergency landing
+- [ ] In-flight collision detection
 
 ## Acknowledgements
+- The Cherno OpenGL in C++ series https://www.youtube.com/playlist?list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2
+- GLFW for window creation https://www.glfw.org/download.html
+- GLEW (OpenGL Extension Wrangler) https://glew.sourceforge.net/basic.html
+- https://docs.gl/
+- https://learnopengl.com/
+- https://github.com/nothings/stb/blob/master/stb_image.h for 2d textures
+- glm for math https://github.com/g-truc/glm
+- ImGui for GUI https://github.com/ocornut/imgui
+- https://github.com/nlohmann/json.git for json
+- https://github.com/libcpr/cpr.git for cURL / HTTP
 - https://www.mdpi.com/2072-4292/13/10/1930
+- https://www.mdpi.com/2079-9292/14/10/2026
+- https://www.sciencedirect.com/science/article/pii/S0952197623008151
+- https://arxiv.org/abs/1705.05065
+- https://arxiv.org/abs/2502.05038
+- https://ntrs.nasa.gov/citations/20180008439
