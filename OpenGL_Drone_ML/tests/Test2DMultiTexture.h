@@ -14,7 +14,6 @@
 | **Polling**  | Asking “is this key down?” every frame | Continuous state; can miss very fast presses |
 */
 
-
 namespace test
 {
 
@@ -36,14 +35,15 @@ namespace test
         std::unique_ptr<Shader> m_Shader;
         std::unique_ptr<Texture> m_Texture;
         std::unique_ptr<Texture> m_Texture2;
+        std::unique_ptr<Texture> m_Texture3;
 
         // transformation data
         glm::mat4 m_Proj, m_View, m_FreeLook;
-        glm::mat4* m_ViewToUse;
+        glm::mat4 *m_ViewToUse;
         glm::vec3 m_TranslationA, m_TranslationB;
 
         // user input data
-        GLFWwindow* m_Window;
+        GLFWwindow *m_Window;
         bool m_FreeLookEnabled;
         bool m_LeftClick;
         bool m_CommsOn;
@@ -57,7 +57,9 @@ namespace test
         // KeyCallback does not need to be polled it is handled by GLFW directly
         static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
         static void MouseCallback(GLFWwindow *window, double xposIn, double yposIn);
-        static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+        static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
+
+        bool emergencyStop = false;
     };
 
 }

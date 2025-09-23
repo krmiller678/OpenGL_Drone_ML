@@ -97,6 +97,17 @@ def compute():
         visited_targets.clear()
         last_test_name = test_name
 
+    emergency_stop = state.get("emergency_stop", False)
+    if emergency_stop:
+        new_pos = {
+            "x": current["x"] ,
+            "y": current["y"] ,
+            "z": current["z"] + 200
+        }
+
+        return jsonify(new_pos)
+
+
     # ---------- LEFT-RIGHT LOGIC FOR OTHER TESTS ----------
     if test_name not in ("CooperTest", "Test2DMultiTexture"):
         return jsonify(left_right(current))
