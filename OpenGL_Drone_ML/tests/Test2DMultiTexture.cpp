@@ -114,7 +114,7 @@ namespace test
         {
             glm::vec3 buttonPos(960 - 50, 540 - 50, 0);
             glm::mat4 model = glm::translate(glm::mat4(1.0f), buttonPos);
-            glm::mat4 mvp = m_Proj * *m_ViewToUse * model; // OpenGL col major leads to this order**
+            glm::mat4 mvp = m_Proj * model; // OpenGL col major leads to this order**
             m_Shader->Bind();
             m_Shader->SetUniform1i("u_Texture", 2); // texture3
             m_Shader->SetUniformMat4f("u_MVP", mvp);
@@ -236,14 +236,14 @@ namespace test
         if (!self)
             return;
 
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
         {
             double xpos, ypos;
             glfwGetCursorPos(window, &xpos, &ypos);
 
             float buttonX = 910.0f;
-            float buttonY = 490.0f;
-            float radius = 40.0f;
+            float buttonY = 50.0f;
+            float radius = 50.0f;
 
             // Compute distance from click to button center
             float dx = static_cast<float>(xpos) - buttonX;
@@ -257,7 +257,7 @@ namespace test
             }
         }
 
-        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
         {
             double xpos, ypos;
             glfwGetCursorPos(window, &xpos, &ypos);
