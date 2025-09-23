@@ -60,6 +60,7 @@ namespace test
         static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
         bool emergencyStop = false;
+        bool first_loop = true;
     };
 
 }

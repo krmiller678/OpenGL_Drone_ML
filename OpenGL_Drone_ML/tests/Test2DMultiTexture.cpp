@@ -132,13 +132,22 @@ namespace test
     void Test2DMultiTexture::CommunicateWithServer()
     {
         nlohmann::json payload;
-        payload["test"] = "Test2DMultiTexture"; // <-- identifier, tells server what to do!
-        payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
-        payload["targets"] = nlohmann::json::array();
-        payload["emergency_stop"] = emergencyStop;
-        for (auto &t : m_Targets)
-            payload["targets"].push_back({{"x", t.x}, {"y", t.y}, {"z", t.z}});
-        payload["start"] = {{"x", 200}, {"y", 200}, {"z", 0}};
+        if (first_loop)
+        {
+            payload["test"] = "Test2DMultiTexture"; // <-- identifier, tells server what to do!
+            payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
+            payload["targets"] = nlohmann::json::array();
+            payload["emergency_stop"] = emergencyStop;
+            for (auto &t : m_Targets)
+                payload["targets"].push_back({{"x", t.x}, {"y", t.y}, {"z", t.z}});
+            payload["start"] = {{"x", 200}, {"y", 200}, {"z", 0}};
+            first_loop = false;
+        }
+        else
+        {
+            payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
+            payload["emergency_stop"] = emergencyStop;
+        }
 
         try
         {
