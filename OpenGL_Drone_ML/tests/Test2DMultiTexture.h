@@ -29,9 +29,9 @@ namespace test
 
     private:
         // draw call data
-        std::unique_ptr<VertexArray> m_VAO;
-        std::unique_ptr<VertexBuffer> m_VertexBuffer;
-        std::unique_ptr<IndexBuffer> m_IndexBuffer;
+        std::unique_ptr<VertexArray> m_VAO_ScreenElements;
+        std::unique_ptr<VertexBuffer> m_VertexBuffer_ScreenElements;
+        std::unique_ptr<IndexBuffer> m_IndexBuffer_ScreenElements;
         std::unique_ptr<Shader> m_Shader;
         std::unique_ptr<Texture> m_Texture;
         std::unique_ptr<Texture> m_Texture2;
