@@ -90,9 +90,16 @@ namespace test
 
         m_IndexBuffer_MapElements = std::make_unique<IndexBuffer>(indicesMapElements.data(), indicesMapElements.size());
 
-        // Pickup Zones
+        // Pickup Zones - DYNAMIC
         m_VAO_PickupZones = std::make_unique<VertexArray>();
+        m_VertexBuffer_PickupZones = std::make_unique<VertexBuffer>(200 * sizeof(Vertex)); // up to 50 drop points reserved
+        VertexBufferLayout layoutPickupZones;
+        layoutPickupZones.Push<float>(3); layoutPickupZones.Push<float>(3); layoutPickupZones.Push<float>(2); layoutPickupZones.Push<float>(1);
+        m_VAO_PickupZones->AddBuffer(*m_VertexBuffer_PickupZones, layoutPickupZones);
 
+        m_IndexBuffer_PickupZones = std::make_unique<IndexBuffer>(300); // up to 50 drop points
+
+        // Shader and Textures setup
         m_Shader = std::make_unique<Shader>("res/shaders/Basic2.shader");
         m_Shader->Bind();
         int samplers[8] = { 0, 1, 2, 3, 4, 5, 6, 7 }; // allow up to 8 textures
@@ -116,8 +123,17 @@ namespace test
     void Test2DMultiTexture::OnUpdate(float deltaTime)
     {
         // set dynamic vertex buffer for PickupZones
-        //m_VertexBuffer_PickupZones->Bind();
-        //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(targets), targets);
+        std::vector<Vertex> positionsPickupZones;
+        std::vector<unsigned int> indicesPickupZones;
+        for (auto &pos : m_Targets)
+        {
+            PushQuad(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, { 0.59f, 0.29f, 0.0f }, -1.0f);
+        }
+
+        m_VertexBuffer_PickupZones->Bind();
+        GLCall(glBufferSubData(GL_ARRAY_BUFFER, 0, positionsPickupZones.size() * sizeof(Vertex), positionsPickupZones.data()));
+        m_IndexBuffer_PickupZones->Bind();
+        GLCall(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indicesPickupZones.size() * sizeof(unsigned int), indicesPickupZones.data()));
     }
 
     void Test2DMultiTexture::OnRender()
@@ -150,16 +166,26 @@ namespace test
         //}
 
         {
-            m_Shader->Bind();
-            m_Shader->SetUniformMat4f("u_MVP", m_Proj);
-            renderer.Draw(*m_VAO_ScreenElements, *m_IndexBuffer_ScreenElements, *m_Shader);
-        }
-        {
+            // Map Elements
             glm::mat4 mvp = m_Proj * *m_ViewToUse;
             m_Shader->Bind();
             m_Shader->SetUniformMat4f("u_MVP", mvp);
             renderer.Draw(*m_VAO_MapElements, *m_IndexBuffer_MapElements, *m_Shader);
         }
+        {
+            // Screen Elements
+            m_Shader->Bind();
+            m_Shader->SetUniformMat4f("u_MVP", m_Proj);
+            renderer.Draw(*m_VAO_ScreenElements, *m_IndexBuffer_ScreenElements, *m_Shader);
+        }
+        {
+            // Pickup Zones
+            glm::mat4 mvp = m_Proj * *m_ViewToUse;
+            m_Shader->Bind();
+            m_Shader->SetUniformMat4f("u_MVP", mvp);
+            renderer.Draw(*m_VAO_PickupZones, *m_IndexBuffer_PickupZones, *m_Shader);
+        }
+        
     }
 
     void Test2DMultiTexture::OnImGuiRender()
