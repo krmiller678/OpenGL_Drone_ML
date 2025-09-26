@@ -99,6 +99,20 @@ namespace test
 
         m_IndexBuffer_PickupZones = std::make_unique<IndexBuffer>(300); // up to 50 drop points
 
+        // Drone
+        std::vector<Vertex> positionsDrone;
+        std::vector<unsigned int> indicesDrone;
+        PushQuad(positionsDrone, indicesDrone, 0.0f, 0.0f, 1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 0.0f);
+
+        m_VAO_Drone = std::make_unique<VertexArray>();
+
+        m_VertexBuffer_Drone = std::make_unique<VertexBuffer>(positionsDrone.data(), positionsDrone.size() * sizeof(Vertex));
+        VertexBufferLayout layoutDrone;
+        layoutDrone.Push<float>(3); layoutDrone.Push<float>(3); layoutDrone.Push<float>(2); layoutDrone.Push<float>(1);
+        m_VAO_Drone->AddBuffer(*m_VertexBuffer_Drone, layoutDrone);
+
+        m_IndexBuffer_Drone = std::make_unique<IndexBuffer>(indicesDrone.data(), indicesDrone.size());
+
         // Shader and Textures setup
         m_Shader = std::make_unique<Shader>("res/shaders/Basic2.shader");
         m_Shader->Bind();
@@ -147,29 +161,11 @@ namespace test
         if (m_CommsOn)
             CommunicateWithServer();
 
-        // draw targets
-        //for (auto &pos : m_Targets)
-        //{
-        //    glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
-        //    glm::mat4 mvp = m_Proj * *m_ViewToUse * model;
-        //    m_Shader->Bind();
-        //    m_Shader->SetUniformMat4f("u_MVP", mvp);
-        //    renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
-        //}
-        //{
-        //    glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationA);
-        //    glm::mat4 mvp = m_Proj * *m_ViewToUse * model; // OpenGL col major leads to this order**
-        //    m_Shader->Bind();
-        //    m_Shader->SetUniformMat4f("u_MVP", mvp);
-//
-        //    renderer.Draw(*m_VAO, *m_IndexBuffer, *m_Shader);
-        //}
-
+        glm::mat4 vp = m_Proj * *m_ViewToUse;
         {
             // Map Elements
-            glm::mat4 mvp = m_Proj * *m_ViewToUse;
             m_Shader->Bind();
-            m_Shader->SetUniformMat4f("u_MVP", mvp);
+            m_Shader->SetUniformMat4f("u_MVP", vp);
             renderer.Draw(*m_VAO_MapElements, *m_IndexBuffer_MapElements, *m_Shader);
         }
         {
@@ -180,10 +176,18 @@ namespace test
         }
         {
             // Pickup Zones
-            glm::mat4 mvp = m_Proj * *m_ViewToUse;
+            m_Shader->Bind();
+            m_Shader->SetUniformMat4f("u_MVP", vp);
+            renderer.Draw(*m_VAO_PickupZones, *m_IndexBuffer_PickupZones, *m_Shader);
+        }
+        {
+            // Drone
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationA);
+            glm::mat4 mvp = vp * model; // OpenGL col major leads to this order**
             m_Shader->Bind();
             m_Shader->SetUniformMat4f("u_MVP", mvp);
-            renderer.Draw(*m_VAO_PickupZones, *m_IndexBuffer_PickupZones, *m_Shader);
+
+            renderer.Draw(*m_VAO_Drone, *m_IndexBuffer_Drone, *m_Shader);
         }
         
     }
@@ -347,7 +351,7 @@ namespace test
             glm::vec4 clipCoords(ndcX, ndcY, 0.0f, 1.0f);
 
             // Step 2: clip → world
-            glm::mat4 viewProj = self->m_Proj * self->m_FreeLook;
+            glm::mat4 viewProj = self->m_Proj * *(self->m_ViewToUse);
             glm::mat4 invVP = glm::inverse(viewProj);
             glm::vec4 worldPos = invVP * clipCoords;
             worldPos /= worldPos.w;

@@ -53,7 +53,7 @@ namespace test
         // transformation data
         glm::mat4 m_Proj, m_View, m_FreeLook;
         glm::mat4 *m_ViewToUse;
-        glm::vec3 m_TranslationA, m_TranslationB; // TODO - update translation so it is just for drone
+        glm::vec3 m_TranslationA;
 
         // user input data
         GLFWwindow *m_Window;
