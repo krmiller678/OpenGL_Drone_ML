@@ -29,9 +29,22 @@ namespace test
 
     private:
         // draw call data
+        std::unique_ptr<VertexArray> m_VAO_MapElements;
+        std::unique_ptr<VertexBuffer> m_VertexBuffer_MapElements;
+        std::unique_ptr<IndexBuffer> m_IndexBuffer_MapElements;
+
         std::unique_ptr<VertexArray> m_VAO_ScreenElements;
         std::unique_ptr<VertexBuffer> m_VertexBuffer_ScreenElements;
         std::unique_ptr<IndexBuffer> m_IndexBuffer_ScreenElements;
+
+        std::unique_ptr<VertexArray> m_VAO_PickupZones;
+        std::unique_ptr<VertexBuffer> m_VertexBuffer_PickupZones;
+        std::unique_ptr<IndexBuffer> m_IndexBuffer_PickupZones;
+
+        std::unique_ptr<VertexArray> m_VAO_Drone;
+        std::unique_ptr<VertexBuffer> m_VertexBuffer_Drone;
+        std::unique_ptr<IndexBuffer> m_IndexBuffer_Drone;
+
         std::unique_ptr<Shader> m_Shader;
         std::unique_ptr<Texture> m_Texture;
         std::unique_ptr<Texture> m_Texture2;
@@ -40,7 +53,7 @@ namespace test
         // transformation data
         glm::mat4 m_Proj, m_View, m_FreeLook;
         glm::mat4 *m_ViewToUse;
-        glm::vec3 m_TranslationA, m_TranslationB;
+        glm::vec3 m_TranslationA, m_TranslationB; // TODO - update translation so it is just for drone
 
         // user input data
         GLFWwindow *m_Window;
