@@ -101,7 +101,7 @@ namespace test
     {
         // Build JSON state with "null" or empty arrays for unused fields
         nlohmann::json state;
-        state["test"] = "TestServer2D"; // identifier for server to know what logic to run
+        state["test"] = "Basic"; // identifier for server to know what logic to run
         state["current"] = {
             {"x", m_TranslationA.x},
             {"y", m_TranslationA.y},
@@ -109,7 +109,6 @@ namespace test
 
         // Always include these fields, but they can be null/empty
         state["targets"] = nlohmann::json::array(); // empty if none
-        state["start"] = nullptr;                   // null if not used
 
         try
         {

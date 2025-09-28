@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 import math
 import time
-from helpers import distance
-from left_right import left_right
+from helpersBasic import left_right
+from helpers2D import distance
 
 app = Flask(__name__)
 
@@ -13,9 +13,6 @@ visited_targets = []
 waiting = False
 wait_start_time = 0
 wait_duration = 3  # seconds to wait at each target
-
-
-
 
 def init_visited_targets_if_needed(targets):
     """Initialize visited_targets list if it is empty."""

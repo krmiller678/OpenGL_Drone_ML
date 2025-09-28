@@ -42,7 +42,7 @@ namespace test
         : m_Proj(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
           m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
           m_FreeLook(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
-          m_TranslationA(200, 200, 0), m_LastX(960 / 2), m_LastY(540 / 2),
+          m_TranslationA(200, 200, -1), m_LastX(960 / 2), m_LastY(540 / 2),
           m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_CommsOn(false)
     {
         // attaches class instance to the window -> must be used for key callbacks to work!
@@ -74,11 +74,11 @@ namespace test
         std::vector<unsigned int> indicesMapElements;
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 150.0f, 1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f);
+            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 150.0f, -1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f);
         }
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 450.0f, 1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f);
+            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 450.0f, -1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f);
         }
 
         m_VAO_MapElements = std::make_unique<VertexArray>();
@@ -102,7 +102,7 @@ namespace test
         // Drone
         std::vector<Vertex> positionsDrone;
         std::vector<unsigned int> indicesDrone;
-        PushQuad(positionsDrone, indicesDrone, 0.0f, 0.0f, 1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 0.0f);
+        PushQuad(positionsDrone, indicesDrone, 0.0f, 0.0f, 0.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 0.0f);
 
         m_VAO_Drone = std::make_unique<VertexArray>();
 
@@ -204,19 +204,19 @@ namespace test
         nlohmann::json payload;
         if (first_loop)
         {
-            payload["test"] = "Test2DMultiTexture"; // <-- identifier, tells server what to do!
+            payload["test"] = "2DMT"; // <-- identifier, tells server what to do!
             payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
             payload["targets"] = nlohmann::json::array();
             payload["emergency_stop"] = emergencyStop;
             for (auto &t : m_Targets)
                 payload["targets"].push_back({{"x", t.x}, {"y", t.y}, {"z", t.z}});
-            payload["start"] = {{"x", 200}, {"y", 200}, {"z", 0}};
             first_loop = false;
         }
         else
         {
             payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
             payload["emergency_stop"] = emergencyStop;
+            payload["lidar_below_drone"] = {};
         }
 
         try
@@ -226,6 +226,7 @@ namespace test
                 cpr::Url{"http://localhost:5000/compute"},
                 cpr::Body{payload.dump()},
                 cpr::Header{{"Content-Type", "application/json"}});
+            
 
             if (r.status_code != 200)
             {
@@ -331,7 +332,7 @@ namespace test
 
             if (distSquared <= radius * radius)
             {
-                self->emergencyStop = true;
+                self->emergencyStop = !self->emergencyStop;
                 std::cout << "Emergency button clicked!" << std::endl;
             }
         }

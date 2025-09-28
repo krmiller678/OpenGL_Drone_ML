@@ -113,12 +113,11 @@ namespace test
     void CooperTest::CommunicateWithServer()
     {
         nlohmann::json payload;
-        payload["test"] = "CooperTest"; // <-- identifier
+        payload["test"] = "2DCT"; // <-- identifier
         payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
         payload["targets"] = nlohmann::json::array();
         for (auto &t : m_Targets)
             payload["targets"].push_back({{"x", t.x}, {"y", t.y}, {"z", t.z}});
-        payload["start"] = {{"x", 200}, {"y", 200}, {"z", 0}};
 
         try
         {
