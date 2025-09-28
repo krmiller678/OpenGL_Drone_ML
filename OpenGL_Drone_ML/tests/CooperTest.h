@@ -29,7 +29,7 @@ namespace test
         std::unique_ptr<Texture> m_Texture;
 
         glm::mat4 m_Proj, m_View;
-        glm::vec3 m_TranslationA, m_TranslationB;
+        glm::vec3 m_TranslationA;
 
         // positions to display as icons
         std::vector<glm::vec3> m_Targets;

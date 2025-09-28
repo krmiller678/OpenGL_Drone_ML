@@ -37,12 +37,12 @@ def move_toward_target(current, target):
         return new_pos, False
     
 def handle_2D_input(current, targets, start_pos, emergency_stop, lidar_below_drone):
-    if emergency_stop or not targets:
+    if waiting:
+        should_wait() # this should also be a safe landing for package pickup
+        return current
+    elif emergency_stop or not targets:
         new_pos, reached = move_toward_target(current, start_pos)
         return new_pos
-    elif waiting:
-        should_wait()
-        return current
     else:
         new_pos, reached = move_toward_target(current, targets[0])
         if reached:
