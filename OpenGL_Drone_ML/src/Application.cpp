@@ -77,8 +77,13 @@ int main(void)
         ImGui_ImplOpenGL3_Init();
         ImGui::StyleColorsDark();
 
+        float lastFrame = 0.0f;
         while (!glfwWindowShouldClose(window))
         {
+            float currentFrame = glfwGetTime();           // seconds since init
+            float deltaTime = currentFrame - lastFrame;   // time since last frame
+            lastFrame = currentFrame;
+
             GLCall(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
             /* Render here */
             renderer.Clear();
@@ -88,7 +93,7 @@ int main(void)
             ImGui::NewFrame();
             if (currentTest)
             {
-                currentTest->OnUpdate(0.0f);
+                currentTest->OnUpdate(deltaTime);
                 currentTest->OnRender();
                 ImGui::Begin("Test");
                 if (currentTest != testMenu && ImGui::Button("<-"))

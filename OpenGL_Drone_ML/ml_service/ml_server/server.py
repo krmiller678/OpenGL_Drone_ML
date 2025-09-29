@@ -39,7 +39,7 @@ app = Flask(__name__)
 test_type = None
 targets = []
 start_pos = None
-lidar_below_drone = deque(maxlen=100)
+lidar_below_drone = deque(maxlen=10)
 emergency_stop = False
 
 # ---------- MAIN ROUTE ----------
@@ -62,6 +62,7 @@ def compute():
         test_type = test_name
         targets = [dict(t) for t in state["targets"]]
         start_pos = current
+        lidar_below_drone.clear()
         emergency_stop = state.get("emergency_stop", emergency_stop)
 
     if test_name == "Basic":

@@ -7,6 +7,11 @@
 #include "Texture.h"
 
 #include <memory>
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <nlohmann/json.hpp>
 /*
 | Method       | Think of it as…                        | Accuracy                                     |
 | ------------ | -------------------------------------- | -------------------------------------------- |
@@ -53,7 +58,7 @@ namespace test
         // transformation data
         glm::mat4 m_Proj, m_View, m_FreeLook;
         glm::mat4 *m_ViewToUse;
-        glm::vec3 m_TranslationA;
+        glm::vec3 m_TranslationA, m_TargetTranslation;
 
         // user input data
         GLFWwindow *m_Window;
@@ -61,19 +66,29 @@ namespace test
         bool m_LeftClick;
         bool m_CommsOn;
         float m_LastX, m_LastY;
+        bool emergencyStop = false;
 
         // positions to display as icons
         std::vector<glm::vec3> m_Targets;
 
-        void CommunicateWithServer();
-        void ProcessInput(); // handles per frame polling
+        // Server thread stuff
+        void ServerThreadFunc();
+        nlohmann::json BuildPayload();
+        bool first_loop = true;
+        bool m_MakeThread = true;
+        std::thread m_ServerThread;
+        std::queue<nlohmann::json> m_ServerResponses;
+        std::mutex m_QueueMutex;
+        std::condition_variable m_cv;
+        bool stopThread = false;
+        
+        // handles per frame polling
+        void ProcessInput();
         // KeyCallback does not need to be polled it is handled by GLFW directly
         static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
         static void MouseCallback(GLFWwindow *window, double xposIn, double yposIn);
         static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
-
-        bool emergencyStop = false;
-        bool first_loop = true;
+        
     };
 
 }

@@ -1,12 +1,10 @@
 #include "Test2DMultiTexture.h"
-
 #include "Renderer.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
 #include <cpr/cpr.h>
-#include <nlohmann/json.hpp>
 #include <iostream>
 
 namespace test
@@ -43,7 +41,7 @@ namespace test
           m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
           m_FreeLook(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
           m_TranslationA(200, 200, -1), m_LastX(960 / 2), m_LastY(540 / 2),
-          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_CommsOn(false)
+          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_TargetTranslation(200, 200, -1)
     {
         // attaches class instance to the window -> must be used for key callbacks to work!
         glfwSetWindowUserPointer(window, this);
@@ -132,22 +130,53 @@ namespace test
 
     Test2DMultiTexture::~Test2DMultiTexture()
     {
+        stopThread = true;
+        if (m_ServerThread.joinable())
+            {m_ServerThread.join(); std::cout << "Thread destroyed!";}
     }
 
     void Test2DMultiTexture::OnUpdate(float deltaTime)
     {
-        // set dynamic vertex buffer for PickupZones
-        std::vector<Vertex> positionsPickupZones;
-        std::vector<unsigned int> indicesPickupZones;
-        for (auto &pos : m_Targets)
+        // set dynamic vertex buffer for PickupZones pre comms with server
+        if (m_MakeThread)
         {
-            PushQuad(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, { 0.59f, 0.29f, 0.0f }, -1.0f);
-        }
+            std::vector<Vertex> positionsPickupZones;
+            std::vector<unsigned int> indicesPickupZones;
+            for (auto &pos : m_Targets)
+            {
+                PushQuad(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, { 0.59f, 0.29f, 0.0f }, -1.0f);
+            }
 
-        m_VertexBuffer_PickupZones->Bind();
-        GLCall(glBufferSubData(GL_ARRAY_BUFFER, 0, positionsPickupZones.size() * sizeof(Vertex), positionsPickupZones.data()));
-        m_IndexBuffer_PickupZones->Bind();
-        GLCall(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indicesPickupZones.size() * sizeof(unsigned int), indicesPickupZones.data()));
+            m_VertexBuffer_PickupZones->Bind();
+            GLCall(glBufferSubData(GL_ARRAY_BUFFER, 0, positionsPickupZones.size() * sizeof(Vertex), positionsPickupZones.data()));
+            m_IndexBuffer_PickupZones->Bind();
+            GLCall(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indicesPickupZones.size() * sizeof(unsigned int), indicesPickupZones.data()));
+        }
+        else
+        {
+            nlohmann::json action;
+            {
+                std::unique_lock<std::mutex> lock(m_QueueMutex);
+                if (!m_ServerResponses.empty()) 
+                {
+                    action = m_ServerResponses.front();
+                    m_ServerResponses.pop();
+                }
+            }
+            if (!action.empty()) {
+                // Update sim
+                m_TargetTranslation.x = action["x"];
+                m_TargetTranslation.y = action["y"];
+            }
+            // --- smooth interpolation each frame ---
+            float smoothing = 10.0f; // tweak: higher = snappier
+            if (m_TargetTranslation.x > 910)
+                {
+                    m_View = glm::translate(m_View, glm::vec3((m_TranslationA.x - m_TargetTranslation.x ) * smoothing * deltaTime, 0, 0));
+                }
+            m_TranslationA += (m_TargetTranslation - m_TranslationA) * smoothing * deltaTime;
+            std::cout << m_TargetTranslation.x << std::endl;
+        }
     }
 
     void Test2DMultiTexture::OnRender()
@@ -158,8 +187,6 @@ namespace test
         Renderer renderer;
 
         ProcessInput();
-        if (m_CommsOn)
-            CommunicateWithServer();
 
         glm::mat4 vp = m_Proj * *m_ViewToUse;
         {
@@ -199,7 +226,34 @@ namespace test
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     }
 
-    void Test2DMultiTexture::CommunicateWithServer()
+    void Test2DMultiTexture::ServerThreadFunc() {
+        std::cout << "Thread created!" << std::endl;
+        while (!stopThread) {
+            nlohmann::json payload = BuildPayload();
+            try {
+                // Send POST request
+                cpr::Response r = cpr::Post(
+                    cpr::Url{"http://localhost:5000/compute"},
+                    cpr::Body{payload.dump()},
+                    cpr::Header{{"Content-Type", "application/json"}});
+
+                if (r.status_code == 200) {
+                    nlohmann::json action = nlohmann::json::parse(r.text);
+
+                    {
+                        std::lock_guard<std::mutex> lock(m_QueueMutex);
+                        m_ServerResponses.push(action);
+                    }
+                    m_cv.notify_one(); // probably not needed - leaving for now
+                }
+            } catch (const std::exception &e) {
+                std::cerr << "Request failed: " << e.what() << std::endl;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(50)); // throttle
+        }
+    }
+
+    nlohmann::json Test2DMultiTexture::BuildPayload()
     {
         nlohmann::json payload;
         if (first_loop)
@@ -219,36 +273,7 @@ namespace test
             payload["lidar_below_drone"] = {};
         }
 
-        try
-        {
-            // Send POST request
-            cpr::Response r = cpr::Post(
-                cpr::Url{"http://localhost:5000/compute"},
-                cpr::Body{payload.dump()},
-                cpr::Header{{"Content-Type", "application/json"}});
-            
-
-            if (r.status_code != 200)
-            {
-                std::cerr << "Error: HTTP " << r.status_code << std::endl;
-            }
-
-            // Parse response JSON
-            nlohmann::json action = nlohmann::json::parse(r.text);
-            std::cout << "Next action: " << action.dump() << std::endl;
-
-            // Update sim
-            if (action["x"] > 910)
-            {
-                m_View = glm::translate(m_View, glm::vec3(m_TranslationA.x - float(action["x"]), 0, 0));
-            }
-            m_TranslationA.x = action["x"];
-            m_TranslationA.y = action["y"];
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << "Request failed: " << e.what() << std::endl;
-        }
+        return payload;
     }
 
     void Test2DMultiTexture::ProcessInput()
@@ -261,6 +286,7 @@ namespace test
 
     void Test2DMultiTexture::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
     {
+        ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
         // Grab the instance pointer back out
         auto *self = static_cast<Test2DMultiTexture *>(glfwGetWindowUserPointer(window));
         if (!self)
@@ -276,7 +302,13 @@ namespace test
         }
 
         if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
-            self->m_CommsOn = true;
+        {
+            if (self->m_MakeThread)
+            {
+                self->m_ServerThread = std::thread(&Test2DMultiTexture::ServerThreadFunc, self);
+                self->m_MakeThread = false; // only make one thread
+            }
+        }
     }
 
     void Test2DMultiTexture::MouseCallback(GLFWwindow *window, double xposIn, double yposIn)
