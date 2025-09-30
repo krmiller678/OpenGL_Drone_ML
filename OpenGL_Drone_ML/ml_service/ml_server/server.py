@@ -31,8 +31,7 @@ There are 3 stages for handling sensorics and dispatching commands:
 from flask import Flask, request, jsonify
 from collections import deque
 from helpersBasic import left_right
-from helpers2D import handle_2D_input
-
+from helpers2D import handle_2D_input , reorder_targets_shortest_cycle
 app = Flask(__name__)
 
 # --- GLOBALS ---
@@ -65,12 +64,18 @@ def compute():
         lidar_below_drone.clear()
         emergency_stop = state.get("emergency_stop", emergency_stop)
 
+
+        print("Before reordering:", targets)
+        targets = reorder_targets_shortest_cycle(targets, start_pos)
+        print("After reordering:", targets )
+
     if test_name == "Basic":
         return jsonify(left_right(current))
     elif test_name == "2DCT" or test_name == "2DMT":
         lidar_below_drone = state.get("lidar_below_drone", lidar_below_drone)
         emergency_stop = state.get("emergency_stop", emergency_stop)
-        return jsonify(handle_2D_input(current, targets, start_pos, emergency_stop, lidar_below_drone))
+        response = handle_2D_input(current, targets, start_pos, emergency_stop, lidar_below_drone)
+        return jsonify(response)
     #elif test_name == "3D":
         #return jsonify(handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_drone))
     else:
