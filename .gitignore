@@ -5,3 +5,4 @@ build/
 *.obj
 *.pdb
 OpenGL_Drone_ML/ml_service/ml_server/__pycache__/
+venv

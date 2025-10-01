@@ -61,13 +61,14 @@ def compute():
         test_type = test_name
         targets = [dict(t) for t in state["targets"]]
         start_pos = current
-        lidar_below_drone.clear()
+        if lidar_below_drone:
+            lidar_below_drone.clear()
         emergency_stop = state.get("emergency_stop", emergency_stop)
 
 
-        print("Before reordering:", targets)
+        print("Before reordering:", targets, flush = True)
         targets = reorder_targets_shortest_cycle(targets, start_pos)
-        print("After reordering:", targets )
+        print("After reordering:", targets, flush = True)
 
     if test_name == "Basic":
         return jsonify(left_right(current))
