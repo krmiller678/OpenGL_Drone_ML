@@ -19,7 +19,7 @@ namespace test
     };
 
     void PushQuad(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices,
-                float x, float y, float z, float w, float h, glm::vec3 color, float texSlot) 
+                float x, float y, float z, float w, float h, glm::vec3 color, float texSlot, std::vector<Triangle>* terrain = nullptr) 
     {
         unsigned int startIndex = vertices.size();
 
@@ -34,14 +34,24 @@ namespace test
         indices.push_back(startIndex + 2);
         indices.push_back(startIndex + 3);
         indices.push_back(startIndex + 0);
+
+        if (terrain) {
+        glm::vec3 v0(vertices[startIndex+0].x, vertices[startIndex+0].y, vertices[startIndex+0].z);
+        glm::vec3 v1(vertices[startIndex+1].x, vertices[startIndex+1].y, vertices[startIndex+1].z);
+        glm::vec3 v2(vertices[startIndex+2].x, vertices[startIndex+2].y, vertices[startIndex+2].z);
+        glm::vec3 v3(vertices[startIndex+3].x, vertices[startIndex+3].y, vertices[startIndex+3].z);
+
+        terrain->push_back({v0, v1, v2});
+        terrain->push_back({v2, v3, v0});
+        }
     }
 
     Test2DMultiTexture::Test2DMultiTexture(GLFWwindow *window)
         : m_Proj(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
           m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
           m_FreeLook(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
-          m_TranslationA(200, 200, -1), m_LastX(960 / 2), m_LastY(540 / 2),
-          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_TargetTranslation(200, 200, -1)
+          m_TranslationA(200, 200, 1), m_LastX(960 / 2), m_LastY(540 / 2),
+          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_TargetTranslation(200, 200, 1)
     {
         // attaches class instance to the window -> must be used for key callbacks to work!
         glfwSetWindowUserPointer(window, this);
@@ -67,16 +77,22 @@ namespace test
 
         m_IndexBuffer_ScreenElements = std::make_unique<IndexBuffer>(indicesScreenElements.data(), indicesScreenElements.size());
 
-        // Map Elements (Houses)
+        // Map Elements (Houses / Ground)
         std::vector<Vertex> positionsMapElements;
         std::vector<unsigned int> indicesMapElements;
+        PushQuad(positionsMapElements, indicesMapElements, 1000.0f, 500.0f, 0.0f, 1200.0f, 500.0f, {0.0f, 0.5f, 0.0f}, -1.0f, &m_Terrain);
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 150.0f, -1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f);
+            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 150.0f, 0.9f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
         }
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 450.0f, -1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f);
+            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 450.0f, 0.9f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
+        }
+
+        for (auto tri : m_Terrain)
+        {
+            std::cout << tri.v0.z << std::endl << tri.v1.z << std::endl << tri.v2.z << std::endl;
         }
 
         m_VAO_MapElements = std::make_unique<VertexArray>();
@@ -181,7 +197,7 @@ namespace test
 
     void Test2DMultiTexture::OnRender()
     {
-        GLCall(glClearColor(0.0f, 0.5f, 0.0f, 1.0f));
+        GLCall(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
 
         Renderer renderer;
@@ -270,10 +286,77 @@ namespace test
         {
             payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
             payload["emergency_stop"] = emergencyStop;
-            payload["lidar_below_drone"] = {};
+            payload["lidar_below_drone"] = LidarScanBelow();
         }
 
         return payload;
+    }
+
+    std::vector<std::vector<float>> Test2DMultiTexture::LidarScanBelow()
+    {
+        const int gridSize = 5;     // 5x5 samples under drone
+        const float spacing = 20.0f; // world units between samples
+
+        std::vector<std::vector<float>> grid(gridSize, std::vector<float>(gridSize, -1.0f));
+
+        glm::vec3 dronePos = m_TranslationA;
+        glm::vec3 rayDir(0, 0, -1); // downwards
+
+        float half = (gridSize - 1) / 2.0f;
+
+        for (int i = 0; i < gridSize; i++) {
+            for (int j = 0; j < gridSize; j++) {
+                float offsetX = (i - half) * spacing;
+                float offsetY = (j - half) * spacing;
+
+                glm::vec3 origin = dronePos + glm::vec3(offsetX, offsetY, 0);
+
+                float closestZ = -FLT_MAX;
+                for (const auto& tri : m_Terrain) {
+                    float t;
+                    if (RayIntersectsTriangle(origin, rayDir, tri, t)) {
+                        float zHit = origin.z + t * rayDir.z;
+                        if (zHit < dronePos.z && zHit > closestZ) {
+                            closestZ = zHit;
+                        }
+                    }
+                }
+
+                if (closestZ > -FLT_MAX) {
+                    grid[i][j] = closestZ;
+                } else {
+                    grid[i][j] = -2.0f; // no ground detected
+                }
+            }
+        }
+
+        return grid;
+    }
+
+    bool Test2DMultiTexture::RayIntersectsTriangle(const glm::vec3& orig, const glm::vec3& dir, const Triangle& tri, float& outT) 
+    {
+        const float EPSILON = 1e-8f;
+        glm::vec3 edge1 = tri.v1 - tri.v0;
+        glm::vec3 edge2 = tri.v2 - tri.v0;
+        glm::vec3 h = glm::cross(dir, edge2);
+        float a = glm::dot(edge1, h);
+        if (fabs(a) < EPSILON) return false; // ray parallel
+
+        float f = 1.0f / a;
+        glm::vec3 s = orig - tri.v0;
+        float u = f * glm::dot(s, h);
+        if (u < 0.0f || u > 1.0f) return false;
+
+        glm::vec3 q = glm::cross(s, edge1);
+        float v = f * glm::dot(dir, q);
+        if (v < 0.0f || u + v > 1.0f) return false;
+
+        float t = f * glm::dot(edge2, q);
+        if (t > EPSILON) {
+            outT = t;
+            return true;
+        }
+        return false;
     }
 
     void Test2DMultiTexture::ProcessInput()

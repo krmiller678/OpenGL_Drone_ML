@@ -35,12 +35,12 @@ def reorder_targets_shortest_cycle(targets, start_pos):
     # return reordered targets then tack on start pos at end
     reordered = [all_points[i] for i in rotated_permutation[1:]] + [start_pos]
     return reordered
+
 def should_wait():
     """Check if we’re currently waiting at a target."""
     global waiting, wait_start_time
     if time.time() - wait_start_time >= wait_duration:
         waiting = False
-
 
 def move_toward_target(current, target):
     """Compute next position moving toward a target by delta."""

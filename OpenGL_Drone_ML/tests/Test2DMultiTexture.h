@@ -22,6 +22,10 @@
 namespace test
 {
 
+    struct Triangle {
+    glm::vec3 v0, v1, v2;
+    };
+
     class Test2DMultiTexture : public Test
     {
     public:
@@ -74,6 +78,9 @@ namespace test
         // Server thread stuff
         void ServerThreadFunc();
         nlohmann::json BuildPayload();
+        std::vector<std::vector<float>> LidarScanBelow();
+        bool RayIntersectsTriangle(const glm::vec3& orig, const glm::vec3& dir, const Triangle& tri, float& outT) ;
+        std::vector<Triangle> m_Terrain;
         bool first_loop = true;
         bool m_MakeThread = true;
         std::thread m_ServerThread;

@@ -74,6 +74,7 @@ def compute():
         return jsonify(left_right(current))
     elif test_name == "2DCT" or test_name == "2DMT":
         lidar_below_drone = state.get("lidar_below_drone", lidar_below_drone)
+        print(lidar_below_drone, flush = True)
         emergency_stop = state.get("emergency_stop", emergency_stop)
         response = handle_2D_input(current, targets, start_pos, emergency_stop, lidar_below_drone)
         return jsonify(response)
