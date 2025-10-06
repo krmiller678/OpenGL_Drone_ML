@@ -185,7 +185,7 @@ namespace test
                 m_TargetTranslation.y = action["y"];
             }
             // --- smooth interpolation each frame ---
-            float smoothing = 10.0f; // tweak: higher = snappier
+            float smoothing = 4.0f; // tweak: higher = snappier
             if (m_TargetTranslation.x > 910)
                 {
                     m_View = glm::translate(m_View, glm::vec3((m_TranslationA.x - m_TargetTranslation.x ) * smoothing * deltaTime, 0, 0));
@@ -265,7 +265,7 @@ namespace test
             } catch (const std::exception &e) {
                 std::cerr << "Request failed: " << e.what() << std::endl;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(50)); // throttle
+            std::this_thread::sleep_for(std::chrono::milliseconds(250)); // throttle
         }
     }
 
@@ -295,7 +295,7 @@ namespace test
     std::vector<std::vector<float>> Test2DMultiTexture::LidarScanBelow()
     {
         const int gridSize = 5;     // 5x5 samples under drone
-        const float spacing = 20.0f; // world units between samples
+        const float spacing = 25.0f; // world units between samples
 
         std::vector<std::vector<float>> grid(gridSize, std::vector<float>(gridSize, -1.0f));
 

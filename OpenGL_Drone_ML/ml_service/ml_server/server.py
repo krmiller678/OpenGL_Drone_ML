@@ -17,7 +17,11 @@ There are 3 stages for handling sensorics and dispatching commands:
             "current":{"x":200.0,"y":200.0,"z":0.0},
             "emergency_stop":false,
             "lidar_below_drone":[
-                {"x":200,"y":200,"z":0}
+                [0.8999999761581421, 0.8999999761581421, 0.0, 0.0, 0.0], 
+                [0.8999999761581421, 0.8999999761581421, 0.0, 0.0, 0.0], 
+                [0.0, 0.0, 0.0, 0.0, 0.0], 
+                [0.0, 0.0, 0.0, 0.0, 0.0], 
+                [0.0, 0.0, 0.0, 0.0, 0.0]
             ]
         }
     - Sends actuator commands
@@ -73,7 +77,7 @@ def compute():
     if test_name == "Basic":
         return jsonify(left_right(current))
     elif test_name == "2DCT" or test_name == "2DMT":
-        lidar_below_drone = state.get("lidar_below_drone", lidar_below_drone)
+        lidar_below_drone.appendleft([current, state.get("lidar_below_drone", lidar_below_drone)]) 
         print(lidar_below_drone, flush = True)
         emergency_stop = state.get("emergency_stop", emergency_stop)
         response = handle_2D_input(current, targets, start_pos, emergency_stop, lidar_below_drone)

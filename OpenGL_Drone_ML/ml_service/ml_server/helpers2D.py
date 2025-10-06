@@ -7,8 +7,10 @@ import numpy as np
 
 delta = 50
 waiting = False
+em_stop_pos_assigned = False
 wait_start_time = 0
 wait_duration = 2
+em_stop_pos = 0
 
 def reorder_targets_shortest_cycle(targets, start_pos):
     """Reorder targets to minimize travel distance, starting and ending at start_pos."""
@@ -64,14 +66,44 @@ def move_toward_target(current, target):
         }
         return new_pos, False
     
+def find_best_landing(lidar_below_drone, start_pos):
+    """Looks at position coordinates and associated lidar scan to find best landing spot"""
+    global em_stop_pos_assigned
+    em_stop_pos_assigned = True
+    for pos_lidar in lidar_below_drone:
+        pos = pos_lidar[0]
+        lidar_lists = pos_lidar[1]
+        for i in range(4):
+            for j in range(4):
+                if (lidar_lists[i][j] == 0 and 
+                    lidar_lists[i+1][j] == 0 and 
+                    lidar_lists[i][j+1] == 0 and 
+                    lidar_lists[i+1][j+1] == 0):
+                    em_stop_pos = {
+                        "x": pos["x"] + (i-1.5)*25,
+                        "y": pos["y"] + (j-1.5)*25,
+                        "z": pos["z"]
+                    }
+                    return em_stop_pos
+    return start_pos
+
+    
+    
 def handle_2D_input(current, targets, start_pos, emergency_stop, lidar_below_drone):
+    global em_stop_pos, em_stop_pos_assigned
     if waiting:
         should_wait() # this should also be a safe landing for package pickup
         return current
-    elif emergency_stop or not targets:
+    elif emergency_stop:
+        if not em_stop_pos_assigned:
+            em_stop_pos = find_best_landing(lidar_below_drone, start_pos)
+        new_pos, reached = move_toward_target(current, em_stop_pos)
+        return new_pos
+    elif not targets:
         new_pos, reached = move_toward_target(current, start_pos)
         return new_pos
     else:
+        em_stop_pos_assigned = False
         new_pos, reached = move_toward_target(current, targets[0])
         if reached:
             if targets:
