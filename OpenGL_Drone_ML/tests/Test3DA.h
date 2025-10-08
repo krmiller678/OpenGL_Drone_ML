@@ -2,10 +2,6 @@
 
 #include "Test.h"
 
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "Texture.h"
-
 #include <memory>
 #include <thread>
 #include <queue>
@@ -21,10 +17,6 @@
 
 namespace test
 {
-
-    struct Triangle {
-    glm::vec3 v0, v1, v2;
-    };
 
     class Test3DA : public Test
     {
@@ -60,9 +52,17 @@ namespace test
         std::unique_ptr<Texture> m_Texture3;
 
         // transformation data
-        glm::mat4 m_Proj, m_View, m_FreeLook;
-        glm::mat4 *m_ViewToUse;
-        glm::vec3 m_TranslationA, m_TargetTranslation;
+        glm::mat4 m_Ortho;
+        glm::mat4 m_Proj, m_View;
+        glm::vec3 m_Drone, m_TargetTranslation;
+
+        // camera work - will need to move into a class
+        glm::vec3 m_CameraPos   = glm::vec3(0.0f, 100.0f, 100.0f);
+        glm::vec3 m_CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+        glm::vec3 m_CameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+        float yaw = -90.0f;
+        float pitch = 0.0f;
+        float fov = 45.0f;
 
         // user input data
         GLFWwindow *m_Window;
@@ -90,11 +90,12 @@ namespace test
         bool stopThread = false;
         
         // handles per frame polling
-        void ProcessInput();
+        void ProcessInput(float deltaTime);
         // KeyCallback does not need to be polled it is handled by GLFW directly
         static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
         static void MouseCallback(GLFWwindow *window, double xposIn, double yposIn);
         static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
+        static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
         
     };
 

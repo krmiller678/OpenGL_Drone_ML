@@ -8,8 +8,28 @@
 #include <GLFW/glfw3.h>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
+#include "VertexBuffer.h"
+#include "VertexBufferLayout.h"
+#include "Texture.h"
 
 namespace test {
+
+    struct Triangle {
+    glm::vec3 v0, v1, v2;
+    };
+
+    // Vertex struct to make adding positions easier and help with dynamic vertex buffer
+    struct Vertex {
+        float x, y, z;
+        float r, g, b;
+        float u, v;
+        float texSlot;
+    };
+
+    void PushQuad(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices,
+            float x, float y, float z, float w, float h, float d, glm::vec3 color, float texSlot, std::vector<Triangle>* terrain = nullptr);
+    void PushCube(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices,
+            float x, float y, float z, float w, float h, float d, glm::vec3 color, float texSlot, std::vector<Triangle>* terrain = nullptr);
 
     class Test
     {
@@ -56,6 +76,10 @@ namespace test {
             static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
             {
                 ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+            }
+            static void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+            {
+                ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
             }
             
         private:

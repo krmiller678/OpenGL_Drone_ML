@@ -24,6 +24,7 @@
 #include "TestServer2D.h"
 #include "CooperTest.h"
 #include "Test2DMultiTexture.h"
+#include "Test3DA.h"
 
 int main(void)
 {
@@ -45,7 +46,7 @@ int main(void)
 
     glfwMakeContextCurrent(window);
 
-    glfwSwapInterval(5);
+    glfwSwapInterval(1);
 
     if (glewInit() != GLEW_OK)
         std::cout << "Error!" << std::endl;
@@ -67,6 +68,7 @@ int main(void)
         testMenu->RegisterTest<test::TestServer2D>("Basic 2D Server");
         testMenu->RegisterTest<test::CooperTest>("Cooper Test");
         testMenu->RegisterTest<test::Test2DMultiTexture>("2D Multi-Texture", window);
+        testMenu->RegisterTest<test::Test3DA>("3DA", window);
 
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
@@ -102,6 +104,7 @@ int main(void)
                     glfwSetKeyCallback(window, testMenu->KeyCallback);
                     glfwSetCursorPosCallback(window, testMenu->MouseCallback);
                     glfwSetMouseButtonCallback(window, testMenu->MouseButtonCallback);
+                    glfwSetScrollCallback(window, testMenu->ScrollCallback);
                     delete currentTest;
                     currentTest = testMenu;
                 }

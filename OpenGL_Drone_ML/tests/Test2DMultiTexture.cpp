@@ -10,42 +10,6 @@
 namespace test
 {
 
-    // Vertex struct to make adding positions easier and help with dynamic vertex buffer
-    struct Vertex {
-        float x, y, z;
-        float r, g, b;
-        float u, v;
-        float texSlot;
-    };
-
-    void PushQuad(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices,
-                float x, float y, float z, float w, float h, glm::vec3 color, float texSlot, std::vector<Triangle>* terrain = nullptr) 
-    {
-        unsigned int startIndex = vertices.size();
-
-        vertices.push_back({x - w, y - h, z, color.r, color.g, color.b, 0.0f, 0.0f, texSlot});
-        vertices.push_back({x + w, y - h, z, color.r, color.g, color.b, 1.0f, 0.0f, texSlot});
-        vertices.push_back({x + w, y + h, z, color.r, color.g, color.b, 1.0f, 1.0f, texSlot});
-        vertices.push_back({x - w, y + h, z, color.r, color.g, color.b, 0.0f, 1.0f, texSlot});
-
-        indices.push_back(startIndex + 0);
-        indices.push_back(startIndex + 1);
-        indices.push_back(startIndex + 2);
-        indices.push_back(startIndex + 2);
-        indices.push_back(startIndex + 3);
-        indices.push_back(startIndex + 0);
-
-        if (terrain) {
-        glm::vec3 v0(vertices[startIndex+0].x, vertices[startIndex+0].y, vertices[startIndex+0].z);
-        glm::vec3 v1(vertices[startIndex+1].x, vertices[startIndex+1].y, vertices[startIndex+1].z);
-        glm::vec3 v2(vertices[startIndex+2].x, vertices[startIndex+2].y, vertices[startIndex+2].z);
-        glm::vec3 v3(vertices[startIndex+3].x, vertices[startIndex+3].y, vertices[startIndex+3].z);
-
-        terrain->push_back({v0, v1, v2});
-        terrain->push_back({v2, v3, v0});
-        }
-    }
-
     Test2DMultiTexture::Test2DMultiTexture(GLFWwindow *window)
         : m_Proj(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
           m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
@@ -66,7 +30,7 @@ namespace test
         // Screen Elements
         std::vector<Vertex> positionsScreenElements;
         std::vector<unsigned int> indicesScreenElements;
-        PushQuad(positionsScreenElements, indicesScreenElements, 910.0f, 490.0f, 1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 2.0f);
+        PushQuad(positionsScreenElements, indicesScreenElements, 910.0f, 490.0f, 1.0f, 50.0f, 50.0f, 0.0f, {0.0f, 0.0f, 0.0f}, 2.0f);
 
         m_VAO_ScreenElements = std::make_unique<VertexArray>();
 
@@ -80,14 +44,14 @@ namespace test
         // Map Elements (Houses / Ground)
         std::vector<Vertex> positionsMapElements;
         std::vector<unsigned int> indicesMapElements;
-        PushQuad(positionsMapElements, indicesMapElements, 1000.0f, 500.0f, 0.0f, 1200.0f, 500.0f, {0.0f, 0.5f, 0.0f}, -1.0f, &m_Terrain);
+        PushQuad(positionsMapElements, indicesMapElements, 1000.0f, 500.0f, 0.0f, 1200.0f, 500.0f, 0.0f, {0.0f, 0.5f, 0.0f}, -1.0f, &m_Terrain);
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 150.0f, 0.9f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
+            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 150.0f, 0.9f, 50.0f, 50.0f, 0.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
         }
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 450.0f, 0.9f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
+            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 450.0f, 0.9f, 50.0f, 50.0f, 0.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
         }
 
         for (auto tri : m_Terrain)
@@ -116,7 +80,7 @@ namespace test
         // Drone
         std::vector<Vertex> positionsDrone;
         std::vector<unsigned int> indicesDrone;
-        PushQuad(positionsDrone, indicesDrone, 0.0f, 0.0f, 0.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 0.0f);
+        PushQuad(positionsDrone, indicesDrone, 0.0f, 0.0f, 0.0f, 50.0f, 50.0f, 0.0f, {0.0f, 0.0f, 0.0f}, 0.0f);
 
         m_VAO_Drone = std::make_unique<VertexArray>();
 
@@ -160,7 +124,7 @@ namespace test
             std::vector<unsigned int> indicesPickupZones;
             for (auto &pos : m_Targets)
             {
-                PushQuad(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, { 0.59f, 0.29f, 0.0f }, -1.0f);
+                PushQuad(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, 0.0f, { 0.59f, 0.29f, 0.0f }, -1.0f);
             }
 
             m_VertexBuffer_PickupZones->Bind();

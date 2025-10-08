@@ -2,10 +2,6 @@
 
 #include "Test.h"
 
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "Texture.h"
-
 #include <memory>
 #include <thread>
 #include <queue>
@@ -21,10 +17,6 @@
 
 namespace test
 {
-
-    struct Triangle {
-    glm::vec3 v0, v1, v2;
-    };
 
     class Test2DMultiTexture : public Test
     {

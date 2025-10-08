@@ -7,7 +7,7 @@ layout (location = 3) in float aTexIndex;
 
 out vec3 ourColor;
 out vec2 TexCoord;
-out float vTexIndex;
+flat out float vTexIndex;
 
 uniform mat4 u_MVP;
 
@@ -25,7 +25,7 @@ out vec4 FragColor;
 
 in vec3 ourColor;
 in vec2 TexCoord;
-in float vTexIndex;
+flat in float vTexIndex;
 
 uniform sampler2D u_Textures[8];
 

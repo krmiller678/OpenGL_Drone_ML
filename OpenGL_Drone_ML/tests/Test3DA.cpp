@@ -10,63 +10,29 @@
 namespace test
 {
 
-    // Vertex struct to make adding positions easier and help with dynamic vertex buffer
-    struct Vertex {
-        float x, y, z;
-        float r, g, b;
-        float u, v;
-        float texSlot;
-    };
-
-    void PushQuad(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices,
-                float x, float y, float z, float w, float h, glm::vec3 color, float texSlot, std::vector<Triangle>* terrain = nullptr) 
-    {
-        unsigned int startIndex = vertices.size();
-
-        vertices.push_back({x - w, y - h, z, color.r, color.g, color.b, 0.0f, 0.0f, texSlot});
-        vertices.push_back({x + w, y - h, z, color.r, color.g, color.b, 1.0f, 0.0f, texSlot});
-        vertices.push_back({x + w, y + h, z, color.r, color.g, color.b, 1.0f, 1.0f, texSlot});
-        vertices.push_back({x - w, y + h, z, color.r, color.g, color.b, 0.0f, 1.0f, texSlot});
-
-        indices.push_back(startIndex + 0);
-        indices.push_back(startIndex + 1);
-        indices.push_back(startIndex + 2);
-        indices.push_back(startIndex + 2);
-        indices.push_back(startIndex + 3);
-        indices.push_back(startIndex + 0);
-
-        if (terrain) {
-        glm::vec3 v0(vertices[startIndex+0].x, vertices[startIndex+0].y, vertices[startIndex+0].z);
-        glm::vec3 v1(vertices[startIndex+1].x, vertices[startIndex+1].y, vertices[startIndex+1].z);
-        glm::vec3 v2(vertices[startIndex+2].x, vertices[startIndex+2].y, vertices[startIndex+2].z);
-        glm::vec3 v3(vertices[startIndex+3].x, vertices[startIndex+3].y, vertices[startIndex+3].z);
-
-        terrain->push_back({v0, v1, v2});
-        terrain->push_back({v2, v3, v0});
-        }
-    }
-
     Test3DA::Test3DA(GLFWwindow *window)
-        : m_Proj(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
-          m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
-          m_FreeLook(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0))),
-          m_TranslationA(200, 200, 1), m_LastX(960 / 2), m_LastY(540 / 2),
-          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_TargetTranslation(200, 200, 1)
+        : m_Ortho(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
+          m_Proj(glm::perspective(glm::radians(fov), 16.0f/9.0f, 0.1f, 1001.0f)),
+          m_Drone(200, 200, 0), m_LastX(960 / 2), m_LastY(540 / 2),
+          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_TargetTranslation(200, 200, 0)
     {
         // attaches class instance to the window -> must be used for key callbacks to work!
         glfwSetWindowUserPointer(window, this);
         glfwSetKeyCallback(window, KeyCallback);
         glfwSetCursorPosCallback(window, MouseCallback);
         glfwSetMouseButtonCallback(window, MouseButtonCallback);
+        glfwSetScrollCallback(window, ScrollCallback);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
         GLCall(glEnable(GL_BLEND));
         GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+        GLCall(glEnable(GL_DEPTH_TEST));
+
 
         // Screen Elements
         std::vector<Vertex> positionsScreenElements;
         std::vector<unsigned int> indicesScreenElements;
-        PushQuad(positionsScreenElements, indicesScreenElements, 910.0f, 490.0f, 1.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 2.0f);
+        PushQuad(positionsScreenElements, indicesScreenElements, 910.0f, 490.0f, 1.0f, 50.0f, 50.0f, 0.0f, {0.0f, 0.0f, 0.0f}, 2.0f);
 
         m_VAO_ScreenElements = std::make_unique<VertexArray>();
 
@@ -80,14 +46,14 @@ namespace test
         // Map Elements (Houses / Ground)
         std::vector<Vertex> positionsMapElements;
         std::vector<unsigned int> indicesMapElements;
-        PushQuad(positionsMapElements, indicesMapElements, 1000.0f, 500.0f, 0.0f, 1200.0f, 500.0f, {0.0f, 0.5f, 0.0f}, -1.0f, &m_Terrain);
+        PushCube(positionsMapElements, indicesMapElements, 500.0f, 1.0f, -500.2f, 500.0f, 2.0f, 500.0f, {0.0f, 0.5f, 0.0f}, -1.0f, &m_Terrain);
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 150.0f, 0.9f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
+            PushCube(positionsMapElements, indicesMapElements, 50.0f, 53.0f, i*-200.0f - 50.0f, 50.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
         }
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushQuad(positionsMapElements, indicesMapElements, i*500.0f + 150.0f, 450.0f, 0.9f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
+            PushCube(positionsMapElements, indicesMapElements, i*200.0f + 100.0f, 53.0f, -900.0f, 50.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
         }
 
         for (auto tri : m_Terrain)
@@ -106,17 +72,17 @@ namespace test
 
         // Pickup Zones - DYNAMIC
         m_VAO_PickupZones = std::make_unique<VertexArray>();
-        m_VertexBuffer_PickupZones = std::make_unique<VertexBuffer>(200 * sizeof(Vertex)); // up to 50 drop points reserved
+        m_VertexBuffer_PickupZones = std::make_unique<VertexBuffer>(200 * sizeof(Vertex) * 6); // up to 50 drop points reserved
         VertexBufferLayout layoutPickupZones;
         layoutPickupZones.Push<float>(3); layoutPickupZones.Push<float>(3); layoutPickupZones.Push<float>(2); layoutPickupZones.Push<float>(1);
         m_VAO_PickupZones->AddBuffer(*m_VertexBuffer_PickupZones, layoutPickupZones);
 
-        m_IndexBuffer_PickupZones = std::make_unique<IndexBuffer>(300); // up to 50 drop points
+        m_IndexBuffer_PickupZones = std::make_unique<IndexBuffer>(300*6); // up to 50 drop points
 
         // Drone
         std::vector<Vertex> positionsDrone;
         std::vector<unsigned int> indicesDrone;
-        PushQuad(positionsDrone, indicesDrone, 0.0f, 0.0f, 0.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 0.0f);
+        PushCube(positionsDrone, indicesDrone, 0.0f, 0.0f, 0.0f, 25.0f, 25.0f, 25.0f, {0.0f, 0.0f, 0.0f}, 0.0f);
 
         m_VAO_Drone = std::make_unique<VertexArray>();
 
@@ -141,7 +107,10 @@ namespace test
         m_Texture2->Bind(1);
         m_Texture3->Bind(2);
 
-        m_ViewToUse = &m_View;
+        m_CameraFront = m_Drone - m_CameraPos;
+        m_View = glm::lookAt(m_CameraPos + m_Drone, 
+  		                     m_CameraFront + m_CameraPos, 
+  		                     m_CameraUp);
     }
 
     Test3DA::~Test3DA()
@@ -149,6 +118,7 @@ namespace test
         stopThread = true;
         if (m_ServerThread.joinable())
             {m_ServerThread.join(); std::cout << "Thread destroyed!";}
+        GLCall(glDisable(GL_DEPTH_TEST));
     }
 
     void Test3DA::OnUpdate(float deltaTime)
@@ -160,7 +130,7 @@ namespace test
             std::vector<unsigned int> indicesPickupZones;
             for (auto &pos : m_Targets)
             {
-                PushQuad(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, { 0.59f, 0.29f, 0.0f }, -1.0f);
+                PushCube(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, 10.0f, {0.59f, 0.29f, 0.0f}, -1.0f, &m_Terrain);
             }
 
             m_VertexBuffer_PickupZones->Bind();
@@ -183,28 +153,40 @@ namespace test
                 // Update sim
                 m_TargetTranslation.x = action["x"];
                 m_TargetTranslation.y = action["y"];
+                m_TargetTranslation.z = action["z"];
             }
             // --- smooth interpolation each frame ---
             float smoothing = 4.0f; // tweak: higher = snappier
-            if (m_TargetTranslation.x > 910)
-                {
-                    m_View = glm::translate(m_View, glm::vec3((m_TranslationA.x - m_TargetTranslation.x ) * smoothing * deltaTime, 0, 0));
-                }
-            m_TranslationA += (m_TargetTranslation - m_TranslationA) * smoothing * deltaTime;
-            std::cout << m_TargetTranslation.x << std::endl;
+            m_Drone += (m_TargetTranslation - m_Drone) * smoothing * deltaTime;
         }
+
+        ProcessInput(deltaTime);
     }
 
     void Test3DA::OnRender()
     {
         GLCall(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-        GLCall(glClear(GL_COLOR_BUFFER_BIT));
+        GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         Renderer renderer;
 
-        ProcessInput();
+        if (m_FreeLookEnabled)
+        {
+            m_View = glm::lookAt(m_CameraPos, 
+  		        m_CameraFront + m_CameraPos, 
+  		        m_CameraUp);
+        }
+        else
+        {
+            m_CameraFront = m_Drone - m_CameraPos;
+            m_View = glm::lookAt(m_CameraPos + m_Drone, 
+  		        m_CameraFront + m_CameraPos, 
+  		        m_CameraUp);
+        }
+        
 
-        glm::mat4 vp = m_Proj * *m_ViewToUse;
+        glm::mat4 vp = m_Proj * m_View;
+
         {
             // Map Elements
             m_Shader->Bind();
@@ -214,7 +196,7 @@ namespace test
         {
             // Screen Elements
             m_Shader->Bind();
-            m_Shader->SetUniformMat4f("u_MVP", m_Proj);
+            m_Shader->SetUniformMat4f("u_MVP", m_Ortho);
             renderer.Draw(*m_VAO_ScreenElements, *m_IndexBuffer_ScreenElements, *m_Shader);
         }
         {
@@ -225,8 +207,8 @@ namespace test
         }
         {
             // Drone
-            glm::mat4 model = glm::translate(glm::mat4(1.0f), m_TranslationA);
-            glm::mat4 mvp = vp * model; // OpenGL col major leads to this order**
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), m_Drone);
+            glm::mat4 mvp = vp * model;
             m_Shader->Bind();
             m_Shader->SetUniformMat4f("u_MVP", mvp);
 
@@ -239,6 +221,8 @@ namespace test
     {
         ImGuiIO &io = ImGui::GetIO();
         (void)io;
+        ImGui::SliderFloat3("m_Drone", &m_Drone.x, 0.0f, 960.0f);
+        ImGui::SliderFloat3("m_CameraPos", &m_CameraPos.x, 0.0f, 960.0f);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     }
 
@@ -274,8 +258,8 @@ namespace test
         nlohmann::json payload;
         if (first_loop)
         {
-            payload["test"] = "2DMT"; // <-- identifier, tells server what to do!
-            payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
+            payload["test"] = "3DA"; // <-- identifier, tells server what to do!
+            payload["current"] = {{"x", m_Drone.x}, {"y", m_Drone.y}, {"z", m_Drone.z}};
             payload["targets"] = nlohmann::json::array();
             payload["emergency_stop"] = emergencyStop;
             for (auto &t : m_Targets)
@@ -284,7 +268,7 @@ namespace test
         }
         else
         {
-            payload["current"] = {{"x", m_TranslationA.x}, {"y", m_TranslationA.y}, {"z", m_TranslationA.z}};
+            payload["current"] = {{"x", m_Drone.x}, {"y", m_Drone.y}, {"z", m_Drone.z}};
             payload["emergency_stop"] = emergencyStop;
             payload["lidar_below_drone"] = LidarScanBelow();
         }
@@ -299,33 +283,33 @@ namespace test
 
         std::vector<std::vector<float>> grid(gridSize, std::vector<float>(gridSize, -1.0f));
 
-        glm::vec3 dronePos = m_TranslationA;
-        glm::vec3 rayDir(0, 0, -1); // downwards
+        glm::vec3 dronePos = m_Drone;
+        glm::vec3 rayDir(0, -1, 0); // downwards
 
         float half = (gridSize - 1) / 2.0f;
 
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
                 float offsetX = (i - half) * spacing;
-                float offsetY = (j - half) * spacing;
+                float offsetZ = (j - half) * spacing;
 
-                glm::vec3 origin = dronePos + glm::vec3(offsetX, offsetY, 0);
+                glm::vec3 origin = dronePos + glm::vec3(offsetX, offsetZ, 0);
 
-                float closestZ = -FLT_MAX;
+                float closestY = -FLT_MAX;
                 for (const auto& tri : m_Terrain) {
                     float t;
                     if (RayIntersectsTriangle(origin, rayDir, tri, t)) {
-                        float zHit = origin.z + t * rayDir.z;
-                        if (zHit < dronePos.z && zHit > closestZ) {
-                            closestZ = zHit;
+                        float yHit = origin.y + t * rayDir.y;
+                        if (yHit < dronePos.y && yHit > closestY) {
+                            closestY = yHit;
                         }
                     }
                 }
 
-                if (closestZ > -FLT_MAX) {
-                    grid[i][j] = closestZ;
+                if (closestY > -FLT_MAX) {
+                    grid[i][j] = closestY;
                 } else {
-                    grid[i][j] = -2.0f; // no ground detected
+                    grid[i][j] = -999.0f; // no ground detected
                 }
             }
         }
@@ -359,12 +343,21 @@ namespace test
         return false;
     }
 
-    void Test3DA::ProcessInput()
+    void Test3DA::ProcessInput(float deltaTime)
     {
         if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
             m_LeftClick = true;
         else
             m_LeftClick = false;
+        const float cameraSpeed = 150.0f * deltaTime; // adjust accordingly
+        if (m_FreeLookEnabled && glfwGetKey(m_Window, GLFW_KEY_W) == GLFW_PRESS)
+            m_CameraPos += cameraSpeed * m_CameraFront;
+        if (m_FreeLookEnabled && glfwGetKey(m_Window, GLFW_KEY_S) == GLFW_PRESS)
+            m_CameraPos -= cameraSpeed * m_CameraFront;
+        if (m_FreeLookEnabled && glfwGetKey(m_Window, GLFW_KEY_A) == GLFW_PRESS)
+            m_CameraPos -= glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * cameraSpeed;
+        if (m_FreeLookEnabled && glfwGetKey(m_Window, GLFW_KEY_D) == GLFW_PRESS)
+            m_CameraPos += glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * cameraSpeed;
     }
 
     void Test3DA::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -378,9 +371,18 @@ namespace test
         if (key == GLFW_KEY_F && action == GLFW_RELEASE)
         {
             if (!self->m_FreeLookEnabled)
-                self->m_ViewToUse = &self->m_FreeLook;
+            {
+                self->m_CameraPos = self->m_CameraPos + self->m_Drone;
+                self->yaw = -90.0f;
+                self->pitch = -45.0f;
+                glm::vec3 front;
+                front.x = cos(glm::radians(self->yaw)) * cos(glm::radians(self->pitch));
+                front.y = sin(glm::radians(self->pitch));
+                front.z = sin(glm::radians(self->yaw)) * cos(glm::radians(self->pitch));
+                self->m_CameraFront = glm::normalize(front);
+            }
             else
-                self->m_ViewToUse = &self->m_View;
+                self->m_CameraPos = glm::vec3(0.0f, 100.0f, 100.0f);
             self->m_FreeLookEnabled = !self->m_FreeLookEnabled;
         }
 
@@ -405,7 +407,7 @@ namespace test
         float xpos = static_cast<float>(xposIn);
         float ypos = static_cast<float>(yposIn);
 
-        if (self->m_LeftClick)
+        if (self->m_LeftClick && self->m_FreeLookEnabled)
         {
             float xoffset = xpos - self->m_LastX;
             float yoffset = self->m_LastY - ypos; // inverted Y
@@ -413,7 +415,24 @@ namespace test
             self->m_LastX = xpos;
             self->m_LastY = ypos;
 
-            self->m_FreeLook = glm::translate(self->m_FreeLook, glm::vec3(xoffset, yoffset, 0));
+            float sensitivity = 0.5f;
+            xoffset *= sensitivity;
+            yoffset *= sensitivity;
+
+            self->yaw += xoffset;
+            self->pitch += yoffset;
+        
+            // make sure that when pitch is out of bounds, screen doesn't get flipped
+            if (self->pitch > 89.0f)
+                self->pitch = 89.0f;
+            if (self->pitch < -89.0f)
+                self->pitch = -89.0f;
+
+            glm::vec3 front;
+            front.x = cos(glm::radians(self->yaw)) * cos(glm::radians(self->pitch));
+            front.y = sin(glm::radians(self->pitch));
+            front.z = sin(glm::radians(self->yaw)) * cos(glm::radians(self->pitch));
+            self->m_CameraFront = glm::normalize(front);
         }
         else
         {
@@ -459,22 +478,35 @@ namespace test
 
             int width, height;
             glfwGetWindowSize(window, &width, &height);
+            
+            glm::vec4 worldPos = glm::vec4(10000, 10000, 10000, 1);
 
-            // Step 1: window → NDC
-            float ndcX = (2.0f * xpos) / width - 1.0f;
-            float ndcY = 1.0f - (2.0f * ypos) / height;
-
-            glm::vec4 clipCoords(ndcX, ndcY, 0.0f, 1.0f);
-
-            // Step 2: clip → world
-            glm::mat4 viewProj = self->m_Proj * *(self->m_ViewToUse);
-            glm::mat4 invVP = glm::inverse(viewProj);
-            glm::vec4 worldPos = invVP * clipCoords;
-            worldPos /= worldPos.w;
+            for (const auto& tri : self->m_Terrain) {
+                    float t; 
+                    if (self->RayIntersectsTriangle(self->m_CameraPos, self->m_CameraFront, tri, t)) {
+                        glm::vec3 hit = self->m_CameraPos + t * self->m_CameraFront;
+                        if (glm::length(hit) < glm::length(worldPos)) {
+                            worldPos.x = hit.x; worldPos.y = hit.y; worldPos.z = hit.z;
+                        }
+                    }
+                }
 
             // Step 3: store
             self->m_Targets.push_back(glm::vec3(worldPos));
         }
     }
 
+    void Test3DA::ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+    {
+        ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+        auto *self = static_cast<Test3DA *>(glfwGetWindowUserPointer(window));
+        if (!self)
+            return;
+        self->fov -= (float)yoffset;
+        if (self->fov < 1.0f)
+            self->fov = 1.0f;
+        if (self->fov > 60.0f)
+            self->fov = 60.0f;
+        self->m_Proj = glm::perspective(glm::radians(self->fov), 16.0f/9.0f, 0.1f, 1001.0f);
+    }
 }

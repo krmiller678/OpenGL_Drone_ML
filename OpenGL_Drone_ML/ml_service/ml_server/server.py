@@ -36,6 +36,7 @@ from flask import Flask, request, jsonify
 from collections import deque
 from helpersBasic import left_right
 from helpers2D import handle_2D_input , reorder_targets_shortest_cycle
+from helpers3D import handle_3D_input
 app = Flask(__name__)
 
 # --- GLOBALS ---
@@ -82,8 +83,12 @@ def compute():
         emergency_stop = state.get("emergency_stop", emergency_stop)
         response = handle_2D_input(current, targets, start_pos, emergency_stop, lidar_below_drone)
         return jsonify(response)
-    #elif test_name == "3D":
-        #return jsonify(handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_drone))
+    elif test_name == "3DA":
+        lidar_below_drone.appendleft([current, state.get("lidar_below_drone", lidar_below_drone)]) 
+        print(lidar_below_drone, flush = True)
+        emergency_stop = state.get("emergency_stop", emergency_stop)
+        response = handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_drone)
+        return jsonify(response)
     else:
         return jsonify({"error": "No test type specified"}), 400
 
