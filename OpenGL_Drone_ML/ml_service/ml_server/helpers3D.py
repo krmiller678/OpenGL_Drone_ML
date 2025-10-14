@@ -12,6 +12,12 @@ wait_start_time = 0
 wait_duration = 2
 em_stop_pos = 0
 
+CRUISE_HEIGHT = 100  
+PHASE_CRUISE = 0      
+PHASE_DESCEND = 1     
+PHASE_ASCEND = 2      
+drone_phase = PHASE_CRUISE 
+
 def reorder_targets_shortest_cycle(targets, start_pos):
     """Reorder targets to minimize travel distance, starting and ending at start_pos."""
     all_points = [start_pos] + targets
@@ -88,13 +94,39 @@ def find_best_landing(lidar_below_drone, start_pos):
                     return em_stop_pos
     return start_pos
 
+def move_horizontal(current, target):
+    """Move only in X and Z toward the target; Y stays constant."""
+    dx = target["x"] - current["x"]
+    dz = target["z"] - current["z"]
+    dist = math.sqrt(dx*dx + dz*dz)
+    
+    if dist <= delta:
+        return {"x": target["x"], "y": current["y"], "z": target["z"]}, True
+    else:
+        ratio = delta / dist
+        new_pos = {
+            "x": current["x"] + dx * ratio,
+            "y": current["y"],
+            "z": current["z"] + dz * ratio
+        }
+        return new_pos, False
+    
+def descend_or_ascend(current, target_y):
+    """Move only in Y toward target_y."""
+    dy = target_y - current["y"]
+    dist = abs(dy)
+    
+    if dist <= delta:
+        return {"x": current["x"], "y": target_y, "z": current["z"]}, True
+    else:
+        step = delta if dy > 0 else -delta
+        return {"x": current["x"], "y": current["y"] + step, "z": current["z"]}, False
 
     
 def handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_drone):
-    global em_stop_pos, em_stop_pos_assigned
+    global em_stop_pos, em_stop_pos_assigned , drone_phase , waiting , wait_start_time
     if waiting:
         should_wait() # this should also be a safe landing for package pickup
-        current["y"] = 100
         return current
     elif emergency_stop:
         if not em_stop_pos_assigned:
@@ -106,8 +138,26 @@ def handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_dro
         return new_pos
     else:
         em_stop_pos_assigned = False
-        new_pos, reached = move_toward_target(current, targets[0])
-        if reached:
-            if targets:
+        target = targets[0]
+
+        if drone_phase == PHASE_CRUISE:  
+            hover_target = {"x": target["x"], "y": CRUISE_HEIGHT, "z": target["z"]}  # added
+            new_pos, reached = move_horizontal(current, hover_target)  
+            if reached:  
+                drone_phase = PHASE_DESCEND  
+            return new_pos  
+
+        elif drone_phase == PHASE_DESCEND:  
+            new_pos, reached = descend_or_ascend(current, target["y"])  
+            if reached:  
+                waiting = True  
+                wait_start_time = time.time()
+                drone_phase = PHASE_ASCEND
                 targets.pop(0)
-        return new_pos
+            return new_pos  
+
+        elif drone_phase == PHASE_ASCEND:  
+            new_pos, reached = descend_or_ascend(current, CRUISE_HEIGHT)  
+            if reached:  
+                drone_phase = PHASE_CRUISE
+            return new_pos
