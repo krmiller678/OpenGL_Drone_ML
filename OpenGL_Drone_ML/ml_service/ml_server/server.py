@@ -83,7 +83,7 @@ def compute():
         emergency_stop = state.get("emergency_stop", emergency_stop)
         response = handle_2D_input(current, targets, start_pos, emergency_stop, lidar_below_drone)
         return jsonify(response)
-    elif test_name == "3DA":
+    elif test_name == "3DA" or "3DB":
         lidar_below_drone.appendleft([current, state.get("lidar_below_drone", lidar_below_drone)]) 
         print(lidar_below_drone, flush = True)
         emergency_stop = state.get("emergency_stop", emergency_stop)

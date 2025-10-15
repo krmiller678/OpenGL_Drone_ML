@@ -259,7 +259,7 @@ namespace test
         nlohmann::json payload;
         if (first_loop)
         {
-            payload["test"] = "3DA"; // <-- identifier, tells server what to do!
+            payload["test"] = "3DB"; // <-- identifier, tells server what to do!
             payload["current"] = {{"x", m_Drone.x}, {"y", m_Drone.y}, {"z", m_Drone.z}};
             payload["targets"] = nlohmann::json::array();
             payload["emergency_stop"] = emergencyStop;

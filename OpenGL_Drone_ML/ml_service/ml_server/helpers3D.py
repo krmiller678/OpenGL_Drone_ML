@@ -88,9 +88,9 @@ def find_best_landing(lidar_below_drone, start_pos):
                     lidar_lists[i+1][j+1] <= 3):
                     em_stop_pos = {
                         "x": pos["x"] + (i-1.5)*25,
-                        "y": pos["y"],
+                        "y": lidar_lists[i][j],
                         "z": pos["z"] + (j-1.5)*25
-                    }
+                    } # need to fix the y at some point 
                     return em_stop_pos
     return start_pos
 
@@ -106,9 +106,9 @@ def move_horizontal(current, target):
         ratio = delta / dist
         new_pos = {
             "x": current["x"] + dx * ratio,
-            "y": current["y"],
+            "y": target["y"],
             "z": current["z"] + dz * ratio
-        }
+        } # set y to target to climb over obstacles
         return new_pos, False
     
 def descend_or_ascend(current, target_y):
@@ -134,14 +134,13 @@ def handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_dro
         new_pos, reached = move_toward_target(current, em_stop_pos)
         return new_pos
     elif not targets:
-        new_pos, reached = move_toward_target(current, start_pos)
-        return new_pos
+        return start_pos
     else:
         em_stop_pos_assigned = False
         target = targets[0]
 
         if drone_phase == PHASE_CRUISE:  
-            hover_target = {"x": target["x"], "y": CRUISE_HEIGHT, "z": target["z"]}  # added
+            hover_target = {"x": target["x"], "y": max(CRUISE_HEIGHT + (lidar_below_drone[0][1][2][2] if lidar_below_drone else 0), CRUISE_HEIGHT), "z": target["z"]}  # added
             new_pos, reached = move_horizontal(current, hover_target)  
             if reached:  
                 drone_phase = PHASE_DESCEND  
