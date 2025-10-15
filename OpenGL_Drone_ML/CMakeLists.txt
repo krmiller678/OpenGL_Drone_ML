@@ -75,6 +75,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cpr) # pip install meson and ninja to build
 
+# Assimp
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    assimp
+    GIT_REPOSITORY https://github.com/assimp/assimp.git
+    GIT_TAG        v5.2.5
+)
+FetchContent_MakeAvailable(assimp)
+
 # ------------------------
 # Simulation Side
 # ------------------------
@@ -95,6 +106,7 @@ add_executable(drone_sim
                 tests/CooperTest.cpp
                 tests/Test2DMultiTexture.cpp
                 tests/Test3DA.cpp
+                tests/Test3DB.cpp
     )
 
 # Ensure that resources are copied over
@@ -111,7 +123,7 @@ link_directories(
     ${GLEW_LIB_DIR}
 )
 
-target_link_libraries(drone_sim PRIVATE ImGuiLib "${GLEW_LIB_DIR}/glew32.lib" glm opengl32 gdi32 user32 shell32 advapi32 cpr::cpr nlohmann_json::nlohmann_json)
+target_link_libraries(drone_sim PRIVATE ImGuiLib "${GLEW_LIB_DIR}/glew32.lib" glm opengl32 gdi32 user32 shell32 advapi32 cpr::cpr nlohmann_json::nlohmann_json assimp::assimp)
 
 # ------------------------
 # Docker ML service

@@ -1,4 +1,4 @@
-#include "Test3DA.h"
+#include "Test3DB.h"
 #include "Renderer.h"
 
 #include "glm/glm.hpp"
@@ -7,12 +7,17 @@
 #include <cpr/cpr.h>
 #include <iostream>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/matrix4x4.h>
+
 namespace test
 {
 
-    Test3DA::Test3DA(GLFWwindow *window)
+    Test3DB::Test3DB(GLFWwindow *window)
         : m_Ortho(glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f)),
-          m_Proj(glm::perspective(glm::radians(45.0f), 16.0f/9.0f, 0.1f, 1001.0f)),
+          m_Proj(glm::perspective(glm::radians(45.0f), 16.0f/9.0f, 0.1f, 1201.0f)),
           m_Drone(200, 200, 0), m_LastX(960 / 2), m_LastY(540 / 2),
           m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_TargetTranslation(200, 200, 0)
     {
@@ -46,21 +51,17 @@ namespace test
         // Map Elements (Houses / Ground)
         std::vector<Vertex> positionsMapElements;
         std::vector<unsigned int> indicesMapElements;
-        PushCube(positionsMapElements, indicesMapElements, 500.0f, 1.0f, -500.2f, 500.0f, 2.0f, 500.0f, {0.0f, 0.5f, 0.0f}, -1.0f, &m_Terrain);
+        PushCube(positionsMapElements, indicesMapElements, 600.0f, 1.0f, -500.2f, 600.0f, 2.0f, 500.0f, {0.0, 0.0, 0.0}, 1.0f, &m_Terrain);
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushCube(positionsMapElements, indicesMapElements, 50.0f, 53.0f, i*-200.0f - 50.0f, 50.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
+            LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 180.0f, {50.0f, 7.5f, (i*-200.0f - 50.0f)}, {8.0f, 8.0f, 8.0f});
         }
         for (unsigned int i = 0; i < 5; i++)
         {
-            PushCube(positionsMapElements, indicesMapElements, i*200.0f + 100.0f, 53.0f, -900.0f, 50.0f, 50.0f, 50.0f, {0.0f, 0.0f, 0.0f}, 1.0f, &m_Terrain);
+            LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 90.0f, {(i*200.0f + 250.0f), 7.5f, -900.0f}, {8.0f, 8.0f, 8.0f});
         }
-
-        for (auto tri : m_Terrain)
-        {
-            std::cout << tri.v0.z << std::endl << tri.v1.z << std::endl << tri.v2.z << std::endl;
-        }
-
+        LoadModel("res/assets/mount1.obj", positionsMapElements, indicesMapElements, 45.0f, {650.0f, 0.0f, -400.0f}, {28.0f, 28.0f, 28.0f}, &m_Terrain);
+        
         m_VAO_MapElements = std::make_unique<VertexArray>();
 
         m_VertexBuffer_MapElements = std::make_unique<VertexBuffer>(positionsMapElements.data(), positionsMapElements.size() * sizeof(Vertex));
@@ -82,7 +83,7 @@ namespace test
         // Drone
         std::vector<Vertex> positionsDrone;
         std::vector<unsigned int> indicesDrone;
-        PushCube(positionsDrone, indicesDrone, 0.0f, 0.0f, 0.0f, 25.0f, 25.0f, 25.0f, {0.0f, 0.0f, 0.0f}, 0.0f);
+        LoadModel("res/assets/drone_costum.obj", positionsDrone, indicesDrone, 0.0f, {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f});
 
         m_VAO_Drone = std::make_unique<VertexArray>();
 
@@ -100,7 +101,7 @@ namespace test
         m_Shader->SetUniform1iv("u_Textures", 8, samplers);
 
         m_Texture = std::make_unique<Texture>("res/textures/alien.png");
-        m_Texture2 = std::make_unique<Texture>("res/textures/casa.png");
+        m_Texture2 = std::make_unique<Texture>("res/textures/touch_grass.png");
         m_Texture3 = std::make_unique<Texture>("res/textures/Em_button.png");
 
         m_Texture->Bind();
@@ -113,7 +114,7 @@ namespace test
   		                     m_CameraUp);
     }
 
-    Test3DA::~Test3DA()
+    Test3DB::~Test3DB()
     {
         stopThread = true;
         if (m_ServerThread.joinable())
@@ -121,7 +122,7 @@ namespace test
         GLCall(glDisable(GL_DEPTH_TEST));
     }
 
-    void Test3DA::OnUpdate(float deltaTime)
+    void Test3DB::OnUpdate(float deltaTime)
     {
         // set dynamic vertex buffer for PickupZones pre comms with server
         if (m_MakeThread)
@@ -130,7 +131,7 @@ namespace test
             std::vector<unsigned int> indicesPickupZones;
             for (auto &pos : m_Targets)
             {
-                PushCube(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, 10.0f, {0.59f, 0.29f, 0.0f}, -1.0f, &m_Terrain);
+                PushCube(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, 10.0f, {0.59f, 0.29f, 0.0f}, -1.0f);
             }
 
             m_VertexBuffer_PickupZones->Bind();
@@ -163,7 +164,7 @@ namespace test
         ProcessInput(deltaTime);
     }
 
-    void Test3DA::OnRender()
+    void Test3DB::OnRender()
     {
         GLCall(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
         GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -217,7 +218,7 @@ namespace test
         
     }
 
-    void Test3DA::OnImGuiRender()
+    void Test3DB::OnImGuiRender()
     {
         ImGuiIO &io = ImGui::GetIO();
         (void)io;
@@ -226,7 +227,7 @@ namespace test
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     }
 
-    void Test3DA::ServerThreadFunc() {
+    void Test3DB::ServerThreadFunc() {
         std::cout << "Thread created!" << std::endl;
         while (!stopThread) {
             nlohmann::json payload = BuildPayload();
@@ -253,7 +254,7 @@ namespace test
         }
     }
 
-    nlohmann::json Test3DA::BuildPayload()
+    nlohmann::json Test3DB::BuildPayload()
     {
         nlohmann::json payload;
         if (first_loop)
@@ -276,7 +277,7 @@ namespace test
         return payload;
     }
 
-    std::vector<std::vector<float>> Test3DA::LidarScanBelow()
+    std::vector<std::vector<float>> Test3DB::LidarScanBelow()
     {
         const int gridSize = 5;     // 5x5 samples under drone
         const float spacing = 25.0f; // world units between samples
@@ -317,7 +318,7 @@ namespace test
         return grid;
     }
 
-    bool Test3DA::RayIntersectsTriangle(const glm::vec3& orig, const glm::vec3& dir, const Triangle& tri, float& outT) 
+    bool Test3DB::RayIntersectsTriangle(const glm::vec3& orig, const glm::vec3& dir, const Triangle& tri, float& outT) 
     {
         const float EPSILON = 1e-8f;
         glm::vec3 edge1 = tri.v1 - tri.v0;
@@ -343,7 +344,7 @@ namespace test
         return false;
     }
 
-    void Test3DA::ProcessInput(float deltaTime)
+    void Test3DB::ProcessInput(float deltaTime)
     {
         if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
             m_LeftClick = true;
@@ -360,11 +361,11 @@ namespace test
             m_CameraPos += glm::normalize(glm::cross(m_CameraFront, m_CameraUp)) * cameraSpeed;
     }
 
-    void Test3DA::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+    void Test3DB::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
     {
         ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
         // Grab the instance pointer back out
-        auto *self = static_cast<Test3DA *>(glfwGetWindowUserPointer(window));
+        auto *self = static_cast<Test3DB *>(glfwGetWindowUserPointer(window));
         if (!self)
             return;
 
@@ -390,17 +391,17 @@ namespace test
         {
             if (self->m_MakeThread)
             {
-                self->m_ServerThread = std::thread(&Test3DA::ServerThreadFunc, self);
+                self->m_ServerThread = std::thread(&Test3DB::ServerThreadFunc, self);
                 self->m_MakeThread = false; // only make one thread
             }
         }
     }
 
-    void Test3DA::MouseCallback(GLFWwindow *window, double xposIn, double yposIn)
+    void Test3DB::MouseCallback(GLFWwindow *window, double xposIn, double yposIn)
     {
         ImGui_ImplGlfw_CursorPosCallback(window, xposIn, yposIn);
 
-        auto *self = static_cast<Test3DA *>(glfwGetWindowUserPointer(window));
+        auto *self = static_cast<Test3DB *>(glfwGetWindowUserPointer(window));
         if (!self)
             return;
 
@@ -442,11 +443,11 @@ namespace test
         }
     }
 
-    void Test3DA::MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+    void Test3DB::MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
     {
         ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 
-        auto *self = static_cast<Test3DA *>(glfwGetWindowUserPointer(window));
+        auto *self = static_cast<Test3DB *>(glfwGetWindowUserPointer(window));
         if (!self)
             return;
 
@@ -475,31 +476,56 @@ namespace test
         {
             double xpos, ypos;
             glfwGetCursorPos(window, &xpos, &ypos);
-
+                    
             int width, height;
             glfwGetWindowSize(window, &width, &height);
-            
-            glm::vec4 worldPos = glm::vec4(10000, 10000, 10000, 1);
-
+                    
+            // Step 1: Convert to Normalized Device Coordinates (range [-1, 1])
+            float ndcX = (2.0f * xpos) / width - 1.0f;
+            float ndcY = 1.0f - (2.0f * ypos) / height;
+                    
+            // Step 2: Create clip-space position for the near plane (z = -1)
+            glm::vec4 clipCoords(ndcX, ndcY, -1.0f, 1.0f);
+                    
+            // Step 3: Transform to view space
+            glm::mat4 invProj = glm::inverse(self->m_Proj);
+            glm::vec4 viewCoords = invProj * clipCoords;
+            viewCoords = glm::vec4(viewCoords.x, viewCoords.y, -1.0f, 0.0f); 
+            // set w=0 so translation doesn’t affect direction
+                    
+            // Step 4: Transform to world space
+            glm::mat4 invView = glm::inverse(self->m_View);
+            glm::vec4 worldDir4 = invView * viewCoords;
+            glm::vec3 rayDir = glm::normalize(glm::vec3(worldDir4));
+                    
+            // Step 5: Cast ray
+            glm::vec3 rayOrigin = self->m_CameraPos;
+            glm::vec3 closestHit;
+            float minDist = std::numeric_limits<float>::max();
+                    
             for (const auto& tri : self->m_Terrain) {
-                    float t; 
-                    if (self->RayIntersectsTriangle(self->m_CameraPos, self->m_CameraFront, tri, t)) {
-                        glm::vec3 hit = self->m_CameraPos + t * self->m_CameraFront;
-                        if (glm::length(hit) < glm::length(worldPos)) {
-                            worldPos.x = hit.x; worldPos.y = hit.y; worldPos.z = hit.z;
-                        }
+                float t;
+                if (self->RayIntersectsTriangle(rayOrigin, rayDir, tri, t)) 
+                {
+                    glm::vec3 hit = rayOrigin + t * rayDir;
+                    float dist = glm::length(hit - rayOrigin);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestHit = hit;
                     }
                 }
+}
 
-            // Step 3: store
-            self->m_Targets.push_back(glm::vec3(worldPos));
+if (minDist < std::numeric_limits<float>::max())
+    self->m_Targets.push_back(closestHit);
+
         }
     }
 
-    void Test3DA::ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+    void Test3DB::ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
     {
         ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
-        auto *self = static_cast<Test3DA *>(glfwGetWindowUserPointer(window));
+        auto *self = static_cast<Test3DB *>(glfwGetWindowUserPointer(window));
         if (!self)
             return;
         self->fov -= (float)yoffset;
@@ -508,5 +534,109 @@ namespace test
         if (self->fov > 60.0f)
             self->fov = 60.0f;
         self->m_Proj = glm::perspective(glm::radians(self->fov), 16.0f/9.0f, 0.1f, 1001.0f);
+    }
+
+    bool Test3DB::LoadModel(
+        const std::string& path, std::vector<Vertex>& outVertices, 
+            std::vector<unsigned int>& outIndices, float rotation, const glm::vec3& position,
+            const glm::vec3& scale, std::vector<Triangle>* terrain)
+    {
+        Assimp::Importer importer;
+
+        const aiScene* scene = importer.ReadFile(
+            path,
+            aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
+
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+        {
+            std::cerr << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
+            return false;
+        }
+
+        auto ProcessMesh = [&](aiMesh* mesh)
+        {
+            unsigned int baseIndex = outVertices.size();
+
+            // Set rotation
+            glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+
+            for (unsigned int i = 0; i < mesh->mNumVertices; ++i)
+            {
+                glm::vec3 pos(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+
+                // Apply rotation
+                glm::vec4 rotatedPos = rotMat * glm::vec4(pos, 1.0f);
+
+                Vertex vertex;
+
+                // Apply scale and translation
+                vertex.x = rotatedPos.x * scale.x + position.x;
+                vertex.y = rotatedPos.y * scale.y + position.y;
+                vertex.z = rotatedPos.z * scale.z + position.z;
+
+                if (mesh->HasNormals())
+                {
+                    glm::vec3 normal(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+                    glm::vec3 rotatedNormal = glm::mat3(rotMat) * normal; // rotation only
+                    vertex.r = (rotatedNormal.x + 1.0f) * 0.5f;
+                    vertex.g = (rotatedNormal.y + 1.0f) * 0.5f;
+                    vertex.b = (rotatedNormal.z + 1.0f) * 0.5f;
+                }
+                else
+                {
+                    vertex.r = vertex.g = vertex.b = 1.0f;
+                }
+
+                if (mesh->mTextureCoords[0])
+                {
+                    vertex.u = mesh->mTextureCoords[0][i].x;
+                    vertex.v = mesh->mTextureCoords[0][i].y;
+                }
+                else
+                {
+                    vertex.u = vertex.v = 0.0f;
+                }
+
+                vertex.texSlot = -1.0f;
+                outVertices.push_back(vertex);
+            }
+
+            for (unsigned int i = 0; i < mesh->mNumFaces; ++i)
+            {
+                aiFace face = mesh->mFaces[i];
+                if (face.mNumIndices != 3) continue; // skip non-triangular faces
+            
+                unsigned int i0 = face.mIndices[0] + baseIndex;
+                unsigned int i1 = face.mIndices[1] + baseIndex;
+                unsigned int i2 = face.mIndices[2] + baseIndex;
+            
+                outIndices.push_back(i0);
+                outIndices.push_back(i1);
+                outIndices.push_back(i2);
+            
+                if (terrain)
+                {
+                    const Vertex& v0 = outVertices[i0];
+                    const Vertex& v1 = outVertices[i1];
+                    const Vertex& v2 = outVertices[i2];
+                    terrain->push_back({
+                        glm::vec3(v0.x, v0.y, v0.z),
+                        glm::vec3(v1.x, v1.y, v1.z),
+                        glm::vec3(v2.x, v2.y, v2.z)
+                    });
+                }
+            }
+        };
+
+        std::function<void(aiNode*)> ProcessNode = [&](aiNode* node)
+        {
+            for (unsigned int i = 0; i < node->mNumMeshes; ++i)
+                ProcessMesh(scene->mMeshes[node->mMeshes[i]]);
+            for (unsigned int i = 0; i < node->mNumChildren; ++i)
+                ProcessNode(node->mChildren[i]);
+        };
+
+        ProcessNode(scene->mRootNode);
+        return true;
     }
 }
