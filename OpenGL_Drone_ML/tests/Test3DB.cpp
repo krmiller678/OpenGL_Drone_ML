@@ -52,6 +52,10 @@ namespace test
         std::vector<Vertex> positionsMapElements;
         std::vector<unsigned int> indicesMapElements;
         PushCube(positionsMapElements, indicesMapElements, 600.0f, 1.0f, -500.2f, 600.0f, 2.0f, 500.0f, {0.0, 0.0, 0.0}, 1.0f, &m_Terrain);
+        PushCube(positionsMapElements, indicesMapElements, 250.0f, 25.0f, -200.0f, 50.0f, 3.0f, 50.0f, {0.5, 0.5, 0.5}, -1.0f, &m_Terrain);
+        PushCube(positionsMapElements, indicesMapElements, 225.0f, 25.0f, -600.0f, 50.0f, 3.0f, 50.0f, {0.5, 0.5, 0.5}, -1.0f, &m_Terrain);
+        PushCube(positionsMapElements, indicesMapElements, 800.0f, 125.0f, -400.0f, 50.0f, 3.0f, 50.0f, {0.5, 0.5, 0.5}, -1.0f, &m_Terrain);
+
         for (unsigned int i = 0; i < 5; i++)
         {
             LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 180.0f, {50.0f, 7.5f, (i*-200.0f - 50.0f)}, {8.0f, 8.0f, 8.0f});
@@ -514,11 +518,11 @@ namespace test
                         closestHit = hit;
                     }
                 }
-}
+            }
 
-if (minDist < std::numeric_limits<float>::max())
-    self->m_Targets.push_back(closestHit);
-
+            if (minDist < std::numeric_limits<float>::max())
+                self->m_Targets.push_back(closestHit);
+                
         }
     }
 

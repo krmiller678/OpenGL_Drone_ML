@@ -82,10 +82,9 @@ def find_best_landing(lidar_below_drone, start_pos):
         lidar_lists = pos_lidar[1]
         for i in range(4):
             for j in range(4):
-                if (lidar_lists[i][j] <= 3 and 
-                    lidar_lists[i+1][j] <= 3 and 
-                    lidar_lists[i][j+1] <= 3 and 
-                    lidar_lists[i+1][j+1] <= 3):
+                if (lidar_lists[i][j] - lidar_lists[i+1][j+1] <= 3 and 
+                    lidar_lists[i][j] - lidar_lists[i+1][j+1] >= -3 and
+                    lidar_lists[i][j] >= -20):
                     em_stop_pos = {
                         "x": pos["x"] + (i-1.5)*25,
                         "y": lidar_lists[i][j],
