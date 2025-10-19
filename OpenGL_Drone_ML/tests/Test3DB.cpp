@@ -124,6 +124,20 @@ namespace test
         if (m_ServerThread.joinable())
             {m_ServerThread.join(); std::cout << "Thread destroyed!";}
         GLCall(glDisable(GL_DEPTH_TEST));
+
+        // Reset signal when exiting test case
+        nlohmann::json state;
+        state["test"] = "RESET"; 
+        state["current"] = {{"x", 0},{"y", 0},{"z", 0}};
+        state["targets"] = nlohmann::json::array();
+        cpr::Response r = cpr::Post(
+            cpr::Url{"http://localhost:5000/compute"},
+            cpr::Body{state.dump()},
+            cpr::Header{{"Content-Type", "application/json"}});
+
+            // Parse response JSON
+        nlohmann::json action = nlohmann::json::parse(r.text);
+        std::cout << "Test destroyed: " << action.dump() << std::endl;
     }
 
     void Test3DB::OnUpdate(float deltaTime)
