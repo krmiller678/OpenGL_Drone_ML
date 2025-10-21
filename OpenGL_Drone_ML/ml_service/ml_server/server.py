@@ -85,7 +85,7 @@ def compute():
         return jsonify(response)
     elif test_name == "3DA" or test_name == "3DB":
         lidar_below_drone.appendleft([current, state.get("lidar_below_drone", lidar_below_drone)]) 
-        print(lidar_below_drone, flush = True)
+        #print(lidar_below_drone, flush = True)
         emergency_stop = state.get("emergency_stop", emergency_stop)
         response = handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_drone)
         return jsonify(response)

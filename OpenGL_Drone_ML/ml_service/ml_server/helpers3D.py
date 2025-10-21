@@ -3,6 +3,10 @@ import time
 from collections import deque
 from python_tsp.heuristics import solve_tsp_local_search
 import numpy as np
+try:
+    from ml_landing import get_ml_landing_point
+except ImportError:
+    get_ml_landing_point = None
 
 
 delta = 50
@@ -16,7 +20,7 @@ CRUISE_HEIGHT = 100
 PHASE_CRUISE = 0      
 PHASE_DESCEND = 1     
 PHASE_ASCEND = 2      
-drone_phase = PHASE_CRUISE 
+drone_phase = PHASE_CRUISE
 
 def reorder_targets_shortest_cycle(targets, start_pos):
     """Reorder targets to minimize travel distance, starting and ending at start_pos."""
@@ -77,6 +81,13 @@ def find_best_landing(lidar_below_drone, start_pos):
     """Looks at position coordinates and associated lidar scan to find best landing spot"""
     global em_stop_pos_assigned
     em_stop_pos_assigned = True
+    if get_ml_landing_point is not None:
+        try:
+            em_stop_pos = get_ml_landing_point(lidar_below_drone, visualize_flag=True)
+            return em_stop_pos
+        except Exception as e:
+            print(f"⚠️ ML landing failed ({e}), reverting to heuristic.")
+    # fallback heuristic (your existing logic)
     for pos_lidar in lidar_below_drone:
         pos = pos_lidar[0]
         lidar_lists = pos_lidar[1]
@@ -89,9 +100,10 @@ def find_best_landing(lidar_below_drone, start_pos):
                         "x": pos["x"] + (i-1.5)*25,
                         "y": lidar_lists[i][j],
                         "z": pos["z"] + (j-1.5)*25
-                    } # need to fix the y at some point 
+                    }
                     return em_stop_pos
     return start_pos
+
 
 def move_horizontal(current, target):
     """Move only in X and Z toward the target; Y stays constant."""
