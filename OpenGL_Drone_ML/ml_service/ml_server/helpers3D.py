@@ -167,7 +167,7 @@ def handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_dro
             return new_pos  
 
         elif drone_phase == PHASE_ASCEND:  
-            new_pos, reached = descend_or_ascend(current, CRUISE_HEIGHT)  
+            new_pos, reached = descend_or_ascend(current, max(CRUISE_HEIGHT + (lidar_below_drone[0][1][2][2] if lidar_below_drone else 0), CRUISE_HEIGHT))  
             if reached:  
                 drone_phase = PHASE_CRUISE
             return new_pos
