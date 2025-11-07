@@ -18,7 +18,7 @@ namespace test
     Test3DSurvey::Test3DSurvey(GLFWwindow *window)
         : m_Proj(glm::perspective(glm::radians(45.0f), 16.0f/9.0f, 0.1f, 2000.0f)),
           m_Drone(50, 200, -50), m_LastX(960 / 2), m_LastY(540 / 2),
-          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_TargetTranslation(200, 200, 0)
+          m_Window(window), m_FreeLookEnabled(false), m_LeftClick(false), m_TargetTranslation(50, 200, -50)
     {
         // attaches class instance to the window -> must be used for key callbacks to work!
         glfwSetWindowUserPointer(window, this);
@@ -41,11 +41,11 @@ namespace test
 
         for (unsigned int i = 0; i < 5; i++)
         {
-            LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 180.0f, {50.0f, 7.5f, (i*-200.0f - 50.0f)}, {8.0f, 8.0f, 8.0f});
+            LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 180.0f, {50.0f, 7.5f, (i*-200.0f - 50.0f)}, {8.0f, 8.0f, 8.0f}, &m_Terrain);
         }
         for (unsigned int i = 0; i < 5; i++)
         {
-            LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 90.0f, {(i*200.0f + 250.0f), 7.5f, -900.0f}, {8.0f, 8.0f, 8.0f});
+            LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 90.0f, {(i*200.0f + 250.0f), 7.5f, -900.0f}, {8.0f, 8.0f, 8.0f}, &m_Terrain);
         }
         // Height for mountain model is 5.98482 -> *28 gives 167.574 -> set survey height to 200
         LoadModel("res/assets/mount1.obj", positionsMapElements, indicesMapElements, 45.0f, {650.0f, 0.0f, -400.0f}, {28.0f, 28.0f, 28.0f}, &m_Terrain);
@@ -139,7 +139,7 @@ namespace test
             // Snap to target
             m_Drone = m_TargetTranslation;
         }
-        
+
         // --- Compute velocity and smooth it ---
         glm::vec3 newVelocity = (m_Drone - m_LastDronePos) / std::max(deltaTime, 0.0001f);
         m_Velocity = glm::mix(m_Velocity, newVelocity, 0.2f); // low-pass filter
@@ -211,6 +211,48 @@ namespace test
         ImGui::SliderFloat3("m_Drone", &m_Drone.x, 0.0f, 960.0f);
         ImGui::SliderFloat3("m_CameraPos", &m_CameraPos.x, 0.0f, 960.0f);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+        if (!m_LastLidarScan.empty()) {
+            ImGui::Separator();
+            ImGui::Text("LiDAR Below Drone (Bird's Eye)");
+
+            const int gridSize = m_LastLidarScan.size();
+            const float cellSize = 20.0f; // pixel size per cell
+
+            // min/max for normalization
+            float minVal = -2.0f, maxVal = 170.0f;
+                
+            // Draw heatmap
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            ImVec2 origin = ImGui::GetCursorScreenPos();
+                
+            for (int i = 0; i < gridSize; i++) {
+                for (int j = 0; j < gridSize; j++) {
+                    float val = m_LastLidarScan[i][j];
+                    ImU32 color;
+                    if (val <= -900.0f) {
+                        color = IM_COL32(50, 50, 50, 255); // missing data
+                    } else {
+                        float t = (val - minVal) / (maxVal - minVal + 0.0001f);
+                        // interpolate color from blue→green→yellow→red
+                        ImVec4 col = ImVec4(
+                            std::min(1.0f, 3.0f * t),
+                            std::min(1.0f, 3.0f * (1.0f - fabsf(t - 0.5f))),
+                            std::max(0.0f, 1.0f - 3.0f * t),
+                            1.0f);
+                        color = ImGui::ColorConvertFloat4ToU32(col);
+                    }
+                
+                    ImVec2 p0(origin.x + j * cellSize, origin.y + i * cellSize);
+                    ImVec2 p1(p0.x + cellSize, p0.y + cellSize);
+                    drawList->AddRectFilled(p0, p1, color);
+                    drawList->AddRect(p0, p1, IM_COL32(20, 20, 20, 80));
+                }
+            }
+        
+            // Reserve space in ImGui layout
+            ImGui::Dummy(ImVec2(gridSize * cellSize, gridSize * cellSize));
+        }
     }
 
     void Test3DSurvey::ServerThreadFunc() {
@@ -259,7 +301,8 @@ namespace test
         {
             payload["current"] = {{"x", m_Drone.x}, {"y", m_Drone.y}, {"z", m_Drone.z}};
             payload["emergency_stop"] = emergencyStop;
-            payload["lidar_below_drone"] = LidarScanBelow();
+            m_LastLidarScan = LidarScanBelow();
+            payload["lidar_below_drone"] = m_LastLidarScan;
         }
 
         return payload;
@@ -279,10 +322,10 @@ namespace test
 
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
-                float offsetX = (i - half) * spacing;
-                float offsetZ = (j - half) * spacing;
+                float offsetZ = (i - half) * spacing;
+                float offsetX = (j - half) * spacing;
 
-                glm::vec3 origin = dronePos + glm::vec3(offsetX, offsetZ, 0);
+                glm::vec3 origin = dronePos + glm::vec3(offsetX, 0, offsetZ);
 
                 float closestY = -FLT_MAX;
                 for (const auto& tri : m_Terrain) {

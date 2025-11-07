@@ -86,6 +86,7 @@ namespace test
         void ServerThreadFunc();
         nlohmann::json BuildPayload();
         std::vector<std::vector<float>> LidarScanBelow();
+        std::vector<std::vector<float>> m_LastLidarScan;
         bool RayIntersectsTriangle(const glm::vec3& orig, const glm::vec3& dir, const Triangle& tri, float& outT) ;
         std::vector<Triangle> m_Terrain;
         bool first_loop = true;
