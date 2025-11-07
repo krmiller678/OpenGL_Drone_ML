@@ -236,9 +236,9 @@ namespace test
                         float t = (val - minVal) / (maxVal - minVal + 0.0001f);
                         // interpolate color from blue→green→yellow→red
                         ImVec4 col = ImVec4(
-                            std::min(1.0f, 3.0f * t),
-                            std::min(1.0f, 3.0f * (1.0f - fabsf(t - 0.5f))),
-                            std::max(0.0f, 1.0f - 3.0f * t),
+                            std::clamp(1.5f * t, 0.0f, 1.0f),
+                            std::clamp(1.5f - fabsf(2.0f * t - 1.0f), 0.0f, 1.0f),
+                            std::clamp(1.5f * (1.0f - t), 0.0f, 1.0f),
                             1.0f);
                         color = ImGui::ColorConvertFloat4ToU32(col);
                     }
