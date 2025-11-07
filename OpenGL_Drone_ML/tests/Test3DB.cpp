@@ -64,6 +64,7 @@ namespace test
         {
             LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 90.0f, {(i*200.0f + 250.0f), 7.5f, -900.0f}, {8.0f, 8.0f, 8.0f});
         }
+        // Height for mountain model is 5.98482 -> *28 gives 167.574 -> set survey height to 200
         LoadModel("res/assets/mount1.obj", positionsMapElements, indicesMapElements, 45.0f, {650.0f, 0.0f, -400.0f}, {28.0f, 28.0f, 28.0f}, &m_Terrain);
         
         m_VAO_MapElements = std::make_unique<VertexArray>();
@@ -87,7 +88,7 @@ namespace test
         // Drone
         std::vector<Vertex> positionsDrone;
         std::vector<unsigned int> indicesDrone;
-        LoadModel("res/assets/drone_costum.obj", positionsDrone, indicesDrone, 0.0f, {0.0f, 0.0f, 0.0f}, {5.0f, 5.0f, 5.0f});
+        LoadModel("res/assets/drone_costum.obj", positionsDrone, indicesDrone, 0.0f, {0.0f, 0.0f, 0.0f}, {2.5f, 2.5f, 2.5f});
 
         m_VAO_Drone = std::make_unique<VertexArray>();
 
@@ -149,7 +150,7 @@ namespace test
             std::vector<unsigned int> indicesPickupZones;
             for (auto &pos : m_Targets)
             {
-                PushCube(positionsPickupZones, indicesPickupZones, pos.x, pos.y, pos.z, 10.0f, 10.0f, 10.0f, {0.59f, 0.29f, 0.0f}, -1.0f);
+                PushCube(positionsPickupZones, indicesPickupZones, pos.x, pos.y + 10.0, pos.z, 10.0f, 10.0f, 10.0f, {0.59f, 0.29f, 0.0f}, -1.0f);
             }
 
             m_VertexBuffer_PickupZones->Bind();
@@ -177,6 +178,12 @@ namespace test
             // --- smooth interpolation each frame ---
             float smoothing = 4.0f; // tweak: higher = snappier
             m_Drone += (m_TargetTranslation - m_Drone) * smoothing * deltaTime;
+            if (std::abs(m_Drone.x - m_TargetTranslation.x) < 1.0f && std::abs(m_Drone.y - m_TargetTranslation.y) < 1.0f 
+                && std::abs(m_Drone.z - m_TargetTranslation.z) < 1.0f)
+            {
+                // Snap to target
+                m_Drone = m_TargetTranslation;
+            }
         }
 
         ProcessInput(deltaTime);
