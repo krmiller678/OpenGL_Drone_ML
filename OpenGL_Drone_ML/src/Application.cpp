@@ -26,6 +26,7 @@
 #include "Test2DMultiTexture.h"
 #include "Test3DA.h"
 #include "Test3DB.h"
+#include "Test3DSurvey.h"
 
 int main(void)
 {
@@ -71,6 +72,7 @@ int main(void)
         testMenu->RegisterTest<test::Test2DMultiTexture>("2D Multi-Texture", window);
         testMenu->RegisterTest<test::Test3DA>("3DA", window);
         testMenu->RegisterTest<test::Test3DB>("3DB", window);
+        testMenu->RegisterTest<test::Test3DSurvey>("3DSurvey", window);
 
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();

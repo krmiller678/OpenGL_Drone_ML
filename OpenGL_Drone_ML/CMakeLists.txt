@@ -107,6 +107,7 @@ add_executable(drone_sim
                 tests/Test2DMultiTexture.cpp
                 tests/Test3DA.cpp
                 tests/Test3DB.cpp
+                tests/Test3DSurvey.cpp
     )
 
 # Ensure that resources are copied over
