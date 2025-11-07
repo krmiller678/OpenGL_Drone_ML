@@ -184,6 +184,19 @@ namespace test
                 // Snap to target
                 m_Drone = m_TargetTranslation;
             }
+            // --- Compute velocity and smooth it ---
+            glm::vec3 newVelocity = (m_Drone - m_LastDronePos) / std::max(deltaTime, 0.0001f);
+            m_Velocity = glm::mix(m_Velocity, newVelocity, 0.2f); // low-pass filter
+            m_LastDronePos = m_Drone;
+
+            // --- Compute target roll and pitch from velocity ---
+            float tiltAmount = 0.3f; // radians (~17 degrees max)
+            float rollTarget  = glm::clamp(-m_Velocity.x * 0.05f, -tiltAmount, tiltAmount);
+            float pitchTarget = glm::clamp(m_Velocity.z * 0.05f, -tiltAmount, tiltAmount);
+
+            // Smooth tilt response
+            m_CurrentRoll  = glm::mix(m_CurrentRoll, rollTarget, 5.0f * deltaTime);
+            m_CurrentPitch = glm::mix(m_CurrentPitch, pitchTarget, 5.0f * deltaTime);
         }
 
         ProcessInput(deltaTime);
@@ -234,6 +247,11 @@ namespace test
         {
             // Drone
             glm::mat4 model = glm::translate(glm::mat4(1.0f), m_Drone);
+            
+            // Apply pitch (forward/back) and roll (sideways)
+            model = glm::rotate(model, m_CurrentPitch, glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, m_CurrentRoll,  glm::vec3(0.0f, 0.0f, 1.0f));
+
             glm::mat4 mvp = vp * model;
             m_Shader->Bind();
             m_Shader->SetUniformMat4f("u_MVP", mvp);

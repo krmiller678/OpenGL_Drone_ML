@@ -55,6 +55,13 @@ namespace test
         glm::mat4 m_Ortho;
         glm::mat4 m_Proj, m_View;
         glm::vec3 m_Drone, m_TargetTranslation;
+        // --- For motion and tilt ---
+        glm::vec3 m_LastDronePos = glm::vec3(0.0f);
+        glm::vec3 m_Velocity     = glm::vec3(0.0f);
+
+        // Smoothed tilt angles
+        float m_CurrentRoll  = 0.0f;
+        float m_CurrentPitch = 0.0f;
 
         // camera work - will need to move into a class
         glm::vec3 m_CameraPos   = glm::vec3(0.0f, 100.0f, 100.0f);
