@@ -6,3 +6,4 @@ build/
 OpenGL_Drone_ML/ml_service/ml_server/__pycache__/
 venv
 OpenGL_Drone_ML/ml_service/ml_server/tests/__pycache__/
+OpenGL_Drone_ML/ml_service/ml_server/training_samples/
