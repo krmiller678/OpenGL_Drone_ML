@@ -290,6 +290,8 @@ namespace test
             payload["current"] = {{"x", m_Drone.x}, {"y", m_Drone.y}, {"z", m_Drone.z}};
             payload["targets"] = nlohmann::json::array();
             payload["emergency_stop"] = emergencyStop;
+            m_LastLidarScan = LidarScanBelow();
+            payload["lidar_below_drone"] = m_LastLidarScan;
             for (int i = 0; i < 23; i++) // this is a user defined survey of the terrain (hardcoded for now)
             {
                 payload["targets"].push_back({{"x", i*50 +50}, {"y", 200}, {"z", -50}});

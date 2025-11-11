@@ -348,6 +348,8 @@ namespace test
             payload["current"] = {{"x", m_Drone.x}, {"y", m_Drone.y}, {"z", m_Drone.z}};
             payload["targets"] = nlohmann::json::array();
             payload["emergency_stop"] = emergencyStop;
+            m_LastLidarScan = LidarScanBelow();
+            payload["lidar_below_drone"] = m_LastLidarScan;
             for (auto &t : m_Targets)
                 payload["targets"].push_back({{"x", t.x}, {"y", t.y}, {"z", t.z}});
             first_loop = false;
