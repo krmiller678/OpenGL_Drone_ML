@@ -5,7 +5,7 @@
 <br />
 <h1>
 <p align="center">
-  <img src="" alt="Logo", width="50%", height ="auto">
+  <img src="https://github.com/krmiller678/OpenGL_Drone_ML/blob/main/ML_Drone.png" alt="Logo", width="50%", height ="auto">
   <br>
 </h1>
   <p align="center">
@@ -24,7 +24,7 @@
 
 <p align="center">
  
-<img src="">
+<img src="https://github.com/krmiller678/OpenGL_Drone_ML/blob/main/Test3DB.png">
 </p>                                                                                                                             
                                                                                                                                                       
 ## About The Project 
