@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class PointNetSeg(nn.Module):
     def __init__(self, num_classes=2):
         super().__init__()
-        self.conv1 = nn.Conv1d(3, 64, 1)
+        self.conv1 = nn.Conv1d(5, 64, 1)
         self.conv2 = nn.Conv1d(64, 128, 1)
         self.conv3 = nn.Conv1d(128, 256, 1)
         self.bn1 = nn.BatchNorm1d(64)

@@ -9,6 +9,7 @@ import os
 TRAIN_DIR = "training_samples"
 MODEL_PATH = "safe_landing_model.pt"
 POINTS_PER_FRAME = 25  # 5x5
+NUM_FRAMES = 10
 GRID_SIZE = 5
 
 # ----- Load Random File -----
@@ -22,8 +23,39 @@ model = PointNetSeg(num_classes=2).to(device)
 model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.eval()
 
+# ----- Compute extra features per point (local mean + variance) -----
+all_features = []
+
+for f in range(NUM_FRAMES):
+    frame_pts = points[f*POINTS_PER_FRAME:(f+1)*POINTS_PER_FRAME]  # [25,3]
+    y_grid = frame_pts[:,1].reshape(5,5)
+
+    mean_grid = np.zeros_like(y_grid)
+    var_grid  = np.zeros_like(y_grid)
+    for i in range(5):
+        for j in range(5):
+            i_min, i_max = max(0,i-1), min(5,i+2)
+            j_min, j_max = max(0,j-1), min(5,j+2)
+            patch = y_grid[i_min:i_max, j_min:j_max]
+            mean_grid[i,j] = patch.mean()
+            var_grid[i,j]  = patch.var()
+
+    mean_flat = mean_grid.flatten()
+    var_flat  = var_grid.flatten()
+    frame_features = np.stack([
+        frame_pts[:,0],  # x
+        frame_pts[:,1],  # y
+        frame_pts[:,2],  # z
+        mean_flat,       # local mean
+        var_flat         # local variance
+    ], axis=1)           # [25,5]
+    all_features.append(frame_features)
+
+# Stack all frames -> [250,5]
+pts_features = np.vstack(all_features)
+pts_tensor = torch.tensor(pts_features, dtype=torch.float32).unsqueeze(0).to(device)  # [1,250,5]
+
 # ----- Run Inference -----
-pts_tensor = torch.tensor(points, dtype=torch.float32).unsqueeze(0).to(device)  # [1, 250, 3]
 with torch.no_grad():
     outputs = model(pts_tensor)  # [1, 250, 2]
     preds = torch.argmax(outputs, dim=2).cpu().numpy().flatten()  # [250]

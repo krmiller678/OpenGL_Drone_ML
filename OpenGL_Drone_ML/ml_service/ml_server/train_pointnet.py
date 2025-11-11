@@ -30,27 +30,49 @@ class LidarSegDataset(Dataset):
         if pts.shape[0] != points_per_frame * num_frames:
             raise ValueError(f"Expected 250 points, got {pts.shape[0]}")
 
+        all_features = []  # to hold [x,y,z, local_mean, local_var] for all 250 points
         labels = []
-        for f in range(num_frames):
-            frame_pts = pts[f*points_per_frame:(f+1)*points_per_frame]
-            y_grid = frame_pts[:,1].reshape(5,5)
-            labels_grid = np.zeros_like(y_grid, dtype=np.int64)
 
+        for f in range(num_frames):
+            frame_pts = pts[f*points_per_frame:(f+1)*points_per_frame]  # [25,3]
+            y_grid = frame_pts[:,1].reshape(5,5)
+
+            # ----- Compute local stats per point -----
+            mean_grid = np.zeros_like(y_grid)
+            var_grid  = np.zeros_like(y_grid)
             for i in range(5):
                 for j in range(5):
-                    # 3x3 local neighborhood centered at (i, j)
-                    i_min = max(0, i - 1)
-                    i_max = min(5, i + 2)
-                    j_min = max(0, j - 1)
-                    j_max = min(5, j + 2)
+                    i_min, i_max = max(0,i-1), min(5,i+2)
+                    j_min, j_max = max(0,j-1), min(5,j+2)
+                    patch = y_grid[i_min:i_max, j_min:j_max]
+                    mean_grid[i,j] = patch.mean()
+                    var_grid[i,j]  = patch.var()
 
+            # Flatten the grids and stack with xyz coords
+            mean_flat = mean_grid.flatten()
+            var_flat  = var_grid.flatten()
+            frame_features = np.stack([
+                frame_pts[:,0],  # x
+                frame_pts[:,1],  # y
+                frame_pts[:,2],  # z
+                mean_flat,       # local mean
+                var_flat         # local variance
+            ], axis=1)           # shape [25,5]
+            all_features.append(frame_features)
+
+            # ----- Compute labels per point as before -----
+            labels_grid = np.zeros_like(y_grid, dtype=np.int64)
+            for i in range(5):
+                for j in range(5):
+                    i_min, i_max = max(0,i-1), min(5,i+2)
+                    j_min, j_max = max(0,j-1), min(5,j+2)
                     local_patch = y_grid[i_min:i_max, j_min:j_max]
-                    var = np.var(local_patch)
-                    labels_grid[i,j] = 1 if var < VAR_THRESHOLD else 0
+                    labels_grid[i,j] = 1 if np.var(local_patch) < VAR_THRESHOLD else 0
+            labels.extend(labels_grid.flatten()) # labels still based on variance
 
-            labels.extend(labels_grid.flatten())
-
-        return torch.tensor(pts, dtype=torch.float32), torch.tensor(labels, dtype=torch.long)
+        # Stack all frames together -> [250,5]
+        all_features = np.vstack(all_features)
+        return torch.tensor(all_features, dtype=torch.float32), torch.tensor(labels, dtype=torch.long)
 
 # ----- Load Dataset -----
 dataset = LidarSegDataset()
