@@ -2,91 +2,107 @@
 import os, time
 import numpy as np
 import torch
-import open3d as o3d
-from pointnet_small import PointNetSmall
 import matplotlib
-matplotlib.use("Agg")          # <-- important: use non-interactive backend
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from pointnet_small import PointNetSeg
 
-# --- Load model globally ---
-model = PointNetSmall()
-model.load_state_dict(torch.load("safe_landing_model.pt", map_location="cpu"))
+# --- Parameters ---
+GRID_SIZE = 5
+POINTS_PER_FRAME = GRID_SIZE * GRID_SIZE
+MODEL_PATH = "safe_landing_model.pt"
+SPACING = 25.0  # from handle_survey()
+HALF = (GRID_SIZE - 1) / 2.0
+
+# --- Load model once ---
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = PointNetSeg(num_classes=2).to(device)
+model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.eval()
+print(f"✅ Loaded safe landing model on {device}")
 
-def frame_to_points(lidar_frame):
-    y_vals = np.array(lidar_frame)
-    grid_size = y_vals.shape[0]
-    x, z = np.meshgrid(np.linspace(-1, 1, grid_size), np.linspace(-1, 1, grid_size))
-    return np.stack([x, y_vals, z], axis=-1).reshape(-1, 3)
+# --- Coordinate conversion (matches handle_survey) ---
+def lidar_to_world_points(pos, lidar):
+    """Convert 5x5 lidar height map into 25×3 world-space points using survey offsets."""
+    rows, cols = lidar.shape  # 5x5
+    x_offsets = np.array([(j - HALF) * SPACING for j in range(cols)])
+    z_offsets = np.array([(i - HALF) * SPACING for i in range(rows)])
+    X, Z = np.meshgrid(x_offsets, z_offsets)
+    X += pos["x"]
+    Z += pos["z"]
+    Y = lidar
+    pts = np.stack([X.ravel(), Y.ravel(), Z.ravel()], axis=1)
+    return pts.astype(np.float32)
 
-def find_safest_point(points, grid_size=5):
-    y = points[:,1].reshape(grid_size, grid_size)
-    var_map = np.zeros_like(y)
-    for i in range(grid_size):
-        for j in range(grid_size):
-            i0, i1 = max(0, i-1), min(grid_size, i+2)
-            j0, j1 = max(0, j-1), min(grid_size, j+2)
-            var_map[i,j] = np.var(y[i0:i1,j0:j1])
-    idx = np.unravel_index(np.argmin(var_map), var_map.shape)
-    return points[idx[0]*grid_size + idx[1]]
+# --- Local features (same as training) ---
+def compute_local_features(frame_pts):
+    y_grid = frame_pts[:, 1].reshape(GRID_SIZE, GRID_SIZE)
+    mean_grid = np.zeros_like(y_grid)
+    var_grid = np.zeros_like(y_grid)
+    for i in range(GRID_SIZE):
+        for j in range(GRID_SIZE):
+            i0, i1 = max(0, i-1), min(GRID_SIZE, i+2)
+            j0, j1 = max(0, j-1), min(GRID_SIZE, j+2)
+            patch = y_grid[i0:i1, j0:j1]
+            mean_grid[i, j] = patch.mean()
+            var_grid[i, j] = patch.var()
+    return np.stack([
+        frame_pts[:, 0],
+        frame_pts[:, 1],
+        frame_pts[:, 2],
+        mean_grid.flatten(),
+        var_grid.flatten()
+    ], axis=1)
 
-def visualize(points, landing_point, is_safe=True):
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points)
-    color = np.array([[0,1,0] if is_safe else [1,0,0]] * len(points))
-    pcd.colors = o3d.utility.Vector3dVector(color)
-    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.05)
-    sphere.paint_uniform_color([0,0,1])
-    sphere.translate(landing_point)
-    o3d.visualization.draw_geometries([pcd, sphere], window_name="Emergency Landing Zone")
-
-def visualize_matplotlib(points, landing_point, is_safe=True, out_dir="./"):
-    """
-    Save a headless PNG with the point cloud and landing point.
-    out_dir should be a directory mounted from the host.
-    """
+# --- Visualization for debugging ---
+def visualize_matplotlib(points, preds, landing_point, out_dir="./"):
     os.makedirs(out_dir, exist_ok=True)
     ts = int(time.time() * 1000)
-    fname = f"landing_viz_{ts}.png"
-    out_path = os.path.join(out_dir, fname)
+    out_path = os.path.join(out_dir, f"landing_viz_{ts}.png")
 
-    pts = np.asarray(points)
-    xs, ys, zs = pts[:, 0], pts[:, 1], pts[:, 2]
-
-    fig = plt.figure(figsize=(6,6))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.view_init(elev=35, azim=45)
-
-    # Scatter: color by safety
-    c = 'green' if is_safe else 'red'
-    ax.scatter(xs, zs, ys, s=12, alpha=0.8)  # note: swap axes if you prefer x,y,z ordering
-    ax.scatter([landing_point[0]], [landing_point[2]], [landing_point[1]], 
-               s=120, c='blue', marker='o', edgecolors='k', linewidths=1.5, label='landing')
-
-    ax.set_xlabel("X")
-    ax.set_ylabel("Z")
-    ax.set_zlabel("Y")
-    ax.set_title("Emergency Landing Zone" + (" (safe)" if is_safe else " (unsafe)"))
-    ax.legend()
+    safe_mask = (preds == 1)
+    xs, ys, zs = points[:, 0], points[:, 1], points[:, 2]
+    plt.figure(figsize=(5,5))
+    plt.title("ML Landing Inference (Top-Down View)")
+    plt.scatter(xs[~safe_mask], zs[~safe_mask], c='red', s=30, label="unsafe")
+    plt.scatter(xs[safe_mask], zs[safe_mask], c='green', s=30, label="safe")
+    plt.scatter(landing_point[0], landing_point[2], c='blue', s=100, edgecolors='k', label="landing")
+    plt.xlabel("X (world)")
+    plt.ylabel("Z (world)")
+    plt.legend()
     plt.tight_layout()
-    fig.savefig(out_path, dpi=150)
-    plt.close(fig)
+    plt.savefig(out_path, dpi=150)
+    plt.close()
     return out_path
 
+# --- Core inference entrypoint (used by helpers3d.find_best_landing) ---
 def get_ml_landing_point(lidar_below_drone, visualize_flag=True):
-    pos, lidar_frame = lidar_below_drone[0]  # newest (leftmost)
-    points = frame_to_points(lidar_frame)
-    with torch.no_grad():
-        preds = model(torch.tensor(points, dtype=torch.float32).unsqueeze(0))
-        is_safe = torch.argmax(preds, dim=1).item() == 1
-    landing_point = find_safest_point(points)
-    if visualize_flag:
-        #visualize(points, landing_point, is_safe)
-        out_path = visualize_matplotlib(points, landing_point, is_safe, out_dir="./")
-        print(f"Saved landing viz to {out_path}", flush=True)
-    return {
-        "x": pos["x"] + landing_point[0]*50,
-        "y": landing_point[1],
-        "z": pos["z"] + landing_point[2]*50
-    }
+    """
+    lidar_below_drone: deque of up to 10 (pos, lidar_frame)
+    Returns dict {"x":..., "y":..., "z":...} for best landing.
+    """
+    for frame_idx, (pos, lidar_frame) in enumerate(lidar_below_drone):
+        points = lidar_to_world_points(pos, np.array(lidar_frame))
+        frame_features = compute_local_features(points)
+        pts_tensor = torch.tensor(frame_features, dtype=torch.float32).unsqueeze(0).to(device)
+
+        with torch.no_grad():
+            outputs = model(pts_tensor)  # [1, 25, 2]
+            preds = torch.argmax(outputs, dim=2).cpu().numpy().flatten()
+
+        if np.any(preds == 1):
+            # Choose lowest-variance "safe" region
+            safe_pts = points[preds == 1]
+            variances = np.var(safe_pts[:, 1])
+            landing_point = safe_pts[np.argmin(variances)]
+            if visualize_flag:
+                img_path = visualize_matplotlib(points, preds, landing_point)
+                print(f"✅ Frame {frame_idx}: safe landing found, saved {img_path}", flush=True)
+            return {
+                "x": float(landing_point[0]),
+                "y": float(landing_point[1]),
+                "z": float(landing_point[2])
+            }
+
+    print("⚠️ No safe landing zones found in ML inference.")
+    return None

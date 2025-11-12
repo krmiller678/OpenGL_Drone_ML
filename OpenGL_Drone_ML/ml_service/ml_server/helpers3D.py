@@ -81,6 +81,10 @@ def find_best_landing(lidar_below_drone, start_pos):
     """Looks at position coordinates and associated lidar scan to find best landing spot"""
     global em_stop_pos_assigned
     em_stop_pos_assigned = True
+    # early out if inference does not have enough frames to run on
+    if len(lidar_below_drone) != getattr(lidar_below_drone, "maxlen", None):
+        return start_pos 
+    
     if get_ml_landing_point is not None:
         try:
             em_stop_pos = get_ml_landing_point(lidar_below_drone, visualize_flag=True)
