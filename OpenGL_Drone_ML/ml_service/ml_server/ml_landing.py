@@ -23,7 +23,7 @@ print(f"✅ Loaded safe landing model on {device}")
 
 # --- Coordinate conversion (matches handle_survey) ---
 def lidar_to_world_points(pos, lidar):
-    """Convert 5x5 lidar height map into 25×3 world-space points using survey offsets."""
+    """Convert 5x5 lidar height map into 25x3 world-space points using survey offsets."""
     rows, cols = lidar.shape  # 5x5
     x_offsets = np.array([(j - HALF) * SPACING for j in range(cols)])
     z_offsets = np.array([(i - HALF) * SPACING for i in range(rows)])
@@ -75,12 +75,45 @@ def visualize_matplotlib(points, preds, landing_point, out_dir="./"):
     plt.close()
     return out_path
 
+def save_points_open3D(lidar_below_drone, out_dir="./"):
+    os.makedirs(out_dir, exist_ok=True)
+    ts = int(time.time() * 1000)
+    out_path = os.path.join(out_dir, f"live_LiDAR{ts}.pts")
+
+    # Combine all lidar frames into a single 3D point cloud
+    points = []
+    for frame in list(lidar_below_drone):
+        pos = frame[0] # this is the {x, y, z} position
+        lidar = np.array(frame[1]) # y-values sampled around the point
+        # interpret lidar points
+        rows, cols = lidar.shape  # should both be 5
+        spacing = 25.0
+        half = (cols - 1) / 2.0  # 2.0 for 5x5
+        x_offsets = np.array([(j - half) * spacing for j in range(cols)])
+        z_offsets = np.array([(i - half) * spacing for i in range(rows)])
+        # Create world coordinates
+        X, Z = np.meshgrid(x_offsets, z_offsets)
+        X += pos["x"]
+        Z += pos["z"]
+        Y = lidar  # the ground hit heights
+        # Flatten to N×3
+        pts = np.stack([X.ravel(), Y.ravel(), Z.ravel()], axis=1)
+        points.append(pts)
+    
+    all_points = np.concatenate(points, axis=0)
+    np.savetxt(out_path, all_points, fmt="%.4f")
+    return out_path
+
 # --- Core inference entrypoint (used by helpers3d.find_best_landing) ---
 def get_ml_landing_point(lidar_below_drone, visualize_flag=True):
     """
     lidar_below_drone: deque of up to 10 (pos, lidar_frame)
     Returns dict {"x":..., "y":..., "z":...} for best landing.
     """
+    # save lidar_below_drone for outside visualization
+    lidar_path = save_points_open3D(lidar_below_drone)
+    print(f"✅ LiDAR terrain saved to {lidar_path}", flush=True)
+
     for frame_idx, (pos, lidar_frame) in enumerate(lidar_below_drone):
         points = lidar_to_world_points(pos, np.array(lidar_frame))
         frame_features = compute_local_features(points)
