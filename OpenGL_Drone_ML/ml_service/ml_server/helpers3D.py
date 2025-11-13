@@ -6,6 +6,7 @@ import numpy as np
 try:
     from ml_landing import get_ml_landing_point
 except ImportError:
+    print("ml landing error", flush=True)
     get_ml_landing_point = None
 
 
@@ -90,7 +91,7 @@ def find_best_landing(lidar_below_drone, start_pos):
             em_stop_pos = get_ml_landing_point(lidar_below_drone, visualize_flag=True)
             return em_stop_pos
         except Exception as e:
-            print(f"⚠️ ML landing failed ({e}), reverting to heuristic.")
+            print(f"⚠️ ML landing failed ({e}), reverting to heuristic.", flush=True)
     # fallback heuristic (your existing logic)
     for pos_lidar in lidar_below_drone:
         pos = pos_lidar[0]
