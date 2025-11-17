@@ -88,13 +88,13 @@ def compute():
         emergency_stop = state.get("emergency_stop", emergency_stop)
         if not emergency_stop:
             lidar_below_drone.appendleft([current, state.get("lidar_below_drone", lidar_below_drone)]) 
+            #print(lidar_below_drone, flush = True)
         response = handle_3D_input(current, targets, start_pos, emergency_stop, lidar_below_drone)
         return jsonify(response)
     elif test_name == "SURVEY":
         emergency_stop = state.get("emergency_stop", emergency_stop)
         if not emergency_stop:
             lidar_below_drone.appendleft([current, state.get("lidar_below_drone", lidar_below_drone)]) 
-            #print(lidar_below_drone, flush = True)
         response = handle_survey(current, targets, start_pos, emergency_stop, lidar_below_drone)
         return jsonify(response)
     elif test_name == "RESET":

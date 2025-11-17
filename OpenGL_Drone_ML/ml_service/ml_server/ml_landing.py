@@ -78,7 +78,7 @@ def visualize_matplotlib(points, preds, landing_point, out_dir="./"):
 def save_points_open3D(lidar_below_drone, out_dir="./"):
     os.makedirs(out_dir, exist_ok=True)
     ts = int(time.time() * 1000)
-    out_path = os.path.join(out_dir, f"live_LiDAR{ts}.pts")
+    out_path = os.path.join(out_dir, f"live_LiDAR.pts") # live_LiDAR{ts}.pts
 
     # Combine all lidar frames into a single 3D point cloud
     points = []

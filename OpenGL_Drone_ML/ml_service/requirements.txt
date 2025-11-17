@@ -1,6 +1,8 @@
+# this requirements file is for the Docker image / guidance and nav system
 flask
 numpy
 python-tsp
-pytest
-#torch # use this for venv locally so you can train - Docker image contains CPU only pytorch
-open3d
+matplotlib
+#open3d
+#pytest
+#torch
