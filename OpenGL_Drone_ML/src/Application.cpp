@@ -27,10 +27,11 @@
 #include "Test3DA.h"
 #include "Test3DB.h"
 #include "Test3DSurvey.h"
+#include "Test3DC.h"
 
 int main(void)
 {
-    GLFWwindow* window;
+    GLFWwindow *window;
 
     if (!glfwInit())
         return -1;
@@ -60,9 +61,9 @@ int main(void)
         GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
         Renderer renderer;
-        
-        test::Test* currentTest = nullptr; // TestMenu will change this for us
-        test::TestMenu* testMenu = new test::TestMenu(currentTest);
+
+        test::Test *currentTest = nullptr; // TestMenu will change this for us
+        test::TestMenu *testMenu = new test::TestMenu(currentTest);
         currentTest = testMenu;
 
         testMenu->RegisterTest<test::TestClearColor>("Clear Color");
@@ -73,9 +74,10 @@ int main(void)
         testMenu->RegisterTest<test::Test3DA>("3DA", window);
         testMenu->RegisterTest<test::Test3DB>("3DB", window);
         testMenu->RegisterTest<test::Test3DSurvey>("3DSurvey", window);
+        testMenu->RegisterTest<test::Test3DC>("3DC", window);
 
         ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
+        ImGuiIO &io = ImGui::GetIO();
         (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
@@ -86,8 +88,8 @@ int main(void)
         float lastFrame = 0.0f;
         while (!glfwWindowShouldClose(window))
         {
-            float currentFrame = glfwGetTime();           // seconds since init
-            float deltaTime = currentFrame - lastFrame;   // time since last frame
+            float currentFrame = glfwGetTime();         // seconds since init
+            float deltaTime = currentFrame - lastFrame; // time since last frame
             lastFrame = currentFrame;
 
             GLCall(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
