@@ -5,7 +5,7 @@
 <br />
 <h1>
 <p align="center">
-  <img src="https://github.com/krmiller678/OpenGL_Drone_ML/blob/main/ML_Drone.png" alt="Logo", width="50%", height ="auto">
+  <img src="ML_Drone.png" alt="Logo", width="50%", height ="auto">
   <br>
 </h1>
   <p align="center">
@@ -24,7 +24,7 @@
 
 <p align="center">
  
-<img src="https://github.com/krmiller678/OpenGL_Drone_ML/blob/main/Test3DB.png">
+<img src="Test3DB.png">
 </p>                                                                                                                             
                                                                                                                                                       
 ## About The Project 
@@ -40,7 +40,7 @@ Requirements (must be on PATH):
 - CMake 3.16 - 3.31
 - C++17 or later
 - Git
-- Python 3
+- Python 3.8 - 3.11
 - pip
 - meson (installed via pip)
 - ninja (installed via pip)
@@ -96,8 +96,9 @@ cmake --build . --target clean-all      # cleanup everything
 **NOTE:** 
 
 ## Planned Features
+- [X] Manually engage emergency landing protocol 
 - [ ] Generated Topography feature
-- [ ] Manually engage emergency landing protocol 
+- [ ] Import City Scapes feature
 - [ ] Select your Machine Learning Landing Algorithm
 - [ ] Fuel level with automatic emergency landing
 - [ ] In-flight collision detection
@@ -119,3 +120,5 @@ cmake --build . --target clean-all      # cleanup everything
 - https://arxiv.org/abs/1705.05065
 - https://arxiv.org/abs/2502.05038
 - https://ntrs.nasa.gov/citations/20180008439
+- https://medium.com/@itberrios6/introduction-to-point-net-d23f43aa87d2
+- https://arxiv.org/pdf/1612.00593

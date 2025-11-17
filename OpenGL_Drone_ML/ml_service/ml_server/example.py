@@ -6,15 +6,15 @@ import random
 import os
 
 # ----- Parameters -----
-TRAIN_DIR = "./"
+PTS_DIR = "./"
 MODEL_PATH = "safe_landing_model.pt"
 POINTS_PER_FRAME = 25  # 5x5
 NUM_FRAMES = 10
 GRID_SIZE = 5
 
 # ----- Load Random File -----
-pts_files = [f for f in os.listdir(TRAIN_DIR) if f.endswith(".pts")]
-file_path = os.path.join(TRAIN_DIR, "live_LiDAR.pts") #random.choice(pts_files)
+pts_files = [f for f in os.listdir(PTS_DIR) if f.endswith(".pts")]
+file_path = os.path.join(PTS_DIR, "live_LiDAR.pts") #random.choice(pts_files)
 points = np.loadtxt(file_path, dtype=np.float32)  # [250, 3]
 
 # ----- Load Model -----

@@ -1,3 +1,4 @@
+# this requirements file is for the Docker image / guidance and nav system
 flask
 numpy
 python-tsp
