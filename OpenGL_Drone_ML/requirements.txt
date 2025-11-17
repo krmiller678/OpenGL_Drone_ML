@@ -1,4 +1,5 @@
 # this requirements file is for the venv
+open3d
 numpy
 pytest
 torch

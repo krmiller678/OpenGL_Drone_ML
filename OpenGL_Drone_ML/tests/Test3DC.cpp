@@ -68,7 +68,7 @@ namespace test
             LoadModel("res/assets/House.obj", positionsMapElements, indicesMapElements, 90.0f, {(i * 200.0f + 250.0f), 7.5f, -900.0f}, {8.0f, 8.0f, 8.0f}, &m_Terrain);
         } */
         // Height for mountain model is 5.98482 -> *28 gives 167.574 -> set survey height to 200
-        LoadModel("res/assets/terrain_model/terrain.obj", positionsMapElements, indicesMapElements, 45.0f, {650.0f, -2.0f, -400.0f}, {280.0f, 280.0f, 280.0f}, &m_Terrain);
+        LoadModel("res/assets/terrain_model/terrain.obj", positionsMapElements, indicesMapElements, 0.0f, {1000.0f, -2.0f, -900.0f}, {280.0f, 280.0f, 280.0f}, &m_Terrain);
 
         m_VAO_MapElements = std::make_unique<VertexArray>();
 
